@@ -1,0 +1,75 @@
+{
+    "cSpell.words": [
+        "bioinformatics"
+    ],
+    "latex-workshop.latex.build.forceRecipeUsage": true,
+    "makefile.configureOnOpen": false,
+    // pick first recipe
+    "latex-workshop.latex.recipe.default": "first",
+    "latex-workshop.view.autoFocus.enabled": true,
+    // pdf recipe
+    // no auto save
+    "files.autoSave": "off",
+    // latex build on save
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    // latex first recipe
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "arara",
+            "tools": [
+                "arara"
+            ]
+        },
+        {
+            "name": "pdf-biber-pdf-pdf",
+            "tools": [
+                "pdflatex",
+                "biber",
+                "pdflatex",
+                "pdflatex"
+            ]
+        },
+        {
+            "name": "pdf-pdflatex",
+            "tools": [
+                "pdflatex",
+                "pdflatex"
+            ]
+        }
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "arara",
+            "command": "arara",
+            "args": [
+                "%DOC%",
+                "-v"
+            ]
+        },
+        {
+            "name": "biber",
+            "command": "biber",
+            "args": [
+                "%DOCFILE%"
+            ]
+        },
+        {
+            "name": "pdflatex",
+            "command": "pdflatex",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-shell-escape",
+                "%DOCFILE%"
+            ]
+        }
+    ],
+    "latex-workshop.view.outline.sections": [
+        "part",
+        "chapter",
+        "section",
+        "subsection|RC",
+        "subsubsection"
+    ],
+}
