@@ -108,7 +108,7 @@ The resulting datasets are a rich resource but present a formidable analytical c
 
 Traditional computational approaches often simplify this high-dimensional data by "flattening" it into a two-dimensional matrix, for instance, by concatenating time points or features. This process of matricization, however, fundamentally disrupts the inherent multi-way structure of the data. The intricate, higher-order interactions between cells, their dynamic features (e.g., velocity, shape), and time are obscured, limiting the discovery of complex patterns.
 
-Tensors, or multi-dimensional arrays, provide a more natural and powerful framework for representing such data, preserving these relationships~\citep{sun2008IncrementalTensorAnalysis}. A tensor of dimensions (cells × time × features) can holistically capture the system's dynamics. To analyze this representation, we require computational tools capable of identifying meaningful sub-structures within the tensor.
+Tensors, or multi-dimensional arrays, provide a more natural and powerful framework for representing such data, preserving these relationships~\citep{sun2008IncrementalTensorAnalysis}. A tensor of dimensions (cells $\times$ time $\times$ features) can holistically capture the system's dynamics. To analyze this representation, we require computational tools capable of identifying meaningful sub-structures within the tensor.
 
 In this work, we propose a novel framework for this purpose by extending the Distributed Merge Co-clustering (DiMergeCo) algorithm from matrices to tensors. Co-clustering, or biclustering, simultaneously groups rows and columns of a matrix, and has proven highly effective in bioinformatics for finding local patterns, such as subsets of genes that are co-expressed under a subset of conditions~\citep{zapala2006MultivariateRegressionAnalysis}. Our tensor extension, DiMergeTCC, identifies "co-clusters" that are cohesive blocks within the data tensor, corresponding to groups of cells exhibiting similar feature dynamics over contiguous time intervals. Critically, our extension maintains the strong probabilistic guarantees of the original DiMergeCo for preserving co-cluster integrity during the analysis of large datasets.
 
@@ -429,11 +429,11 @@ For each method, we measure:
 \end{itemize}
 
 \subsubsection{Comparative results}
-\textbf{Temporal alignment performance:} DiMergeTCC achieves significantly higher alignment scores compared to all baselines (Table~\ref{tab:baseline_comparison}). For dorsal intercalation, mean alignment score is 0.87 ± 0.05 vs. 0.62 ± 0.08 (Tucker), 0.58 ± 0.12 (CP), and 0.51 ± 0.15 (Dhillon spectral); effect sizes (Cohen's $d$) range from 2.1-3.8 (all $p < 0.001$, BY-adjusted permutation tests). For intestinal morphogenesis, DiMergeTCC achieves 0.83 ± 0.06 vs. 0.59 ± 0.11 (best baseline: PARAFAC2).
+\textbf{Temporal alignment performance:} DiMergeTCC achieves significantly higher alignment scores compared to all baselines (Table~\ref{tab:baseline_comparison}). For dorsal intercalation, mean alignment score is 0.87 $\pm$ 0.05 vs. 0.62 $\pm$ 0.08 (Tucker), 0.58 $\pm$ 0.12 (CP), and 0.51 $\pm$ 0.15 (Dhillon spectral); effect sizes (Cohen's $d$) range from 2.1-3.8 (all $p < 0.001$, BY-adjusted permutation tests). For intestinal morphogenesis, DiMergeTCC achieves 0.83 $\pm$ 0.06 vs. 0.59 $\pm$ 0.11 (best baseline: PARAFAC2).
 
-\textbf{Velocity pattern recovery:} DiMergeTCC shows superior correlation with expected velocity patterns: $r = 0.89$ ± 0.04 for dorsal $v_y$ patterns vs. 0.67 ± 0.12 (Cheng-Church) and 0.61 ± 0.18 (Tucker). For intestinal $v_z$ patterns, DiMergeTCC achieves $r = 0.86$ ± 0.05 vs. 0.64 ± 0.13 (PARAFAC2).
+\textbf{Velocity pattern recovery:} DiMergeTCC shows superior correlation with expected velocity patterns: $r = 0.89$ $\pm$ 0.04 for dorsal $v_y$ patterns vs. 0.67 $\pm$ 0.12 (Cheng-Church) and 0.61 $\pm$ 0.18 (Tucker). For intestinal $v_z$ patterns, DiMergeTCC achieves $r = 0.86$ $\pm$ 0.05 vs. 0.64 $\pm$ 0.13 (PARAFAC2).
 
-\textbf{Feature attribution consistency:} Rank correlation of feature weights across cross-validation folds: DiMergeTCC = 0.91 ± 0.03, Tucker = 0.74 ± 0.08, CP = 0.69 ± 0.12, matrix methods = 0.52-0.67 range.
+\textbf{Feature attribution consistency:} Rank correlation of feature weights across cross-validation folds: DiMergeTCC = 0.91 $\pm$ 0.03, Tucker = 0.74 $\pm$ 0.08, CP = 0.69 $\pm$ 0.12, matrix methods = 0.52-0.67 range.
 
 \textbf{Statistical significance:} All pairwise comparisons between DiMergeTCC and baselines achieve $p < 0.001$ (two-sided permutation tests, 10,000 iterations) with BY control across methods and metrics. Effect sizes are large (Cohen's $d > 0.8$) for all metrics, indicating practical significance beyond statistical significance.
 
@@ -445,18 +445,18 @@ For each method, we measure:
 \toprule
 \textbf{Method} & \textbf{Dorsal Align} & \textbf{Intestinal Align} & \textbf{Velocity Corr} & \textbf{Feature Stab} \\
 \midrule
-DiMergeTCC & 0.87 ± 0.05 & 0.83 ± 0.06 & 0.87 ± 0.04 & 0.91 ± 0.03 \\
-Tucker/HOSVD & 0.62 ± 0.08** & 0.61 ± 0.09** & 0.69 ± 0.11** & 0.74 ± 0.08** \\
-CP/PARAFAC & 0.58 ± 0.12** & 0.57 ± 0.14** & 0.65 ± 0.15** & 0.69 ± 0.12** \\
-PARAFAC2 & 0.64 ± 0.09** & 0.59 ± 0.11** & 0.71 ± 0.09** & 0.76 ± 0.07** \\
-NTF & 0.55 ± 0.11** & 0.54 ± 0.12** & 0.62 ± 0.13** & 0.67 ± 0.09** \\
-Spectral (Dhillon) & 0.51 ± 0.15** & 0.48 ± 0.16** & 0.58 ± 0.17** & 0.61 ± 0.11** \\
-Cheng-Church & 0.49 ± 0.14** & 0.52 ± 0.13** & 0.67 ± 0.12** & 0.59 ± 0.10** \\
-PLAID & 0.46 ± 0.16** & 0.49 ± 0.15** & 0.61 ± 0.16** & 0.57 ± 0.12** \\
+DiMergeTCC & 0.87 $\pm$ 0.05 & 0.83 $\pm$ 0.06 & 0.87 $\pm$ 0.04 & 0.91 $\pm$ 0.03 \\
+Tucker/HOSVD & 0.62 $\pm$ 0.08** & 0.61 $\pm$ 0.09** & 0.69 $\pm$ 0.11** & 0.74 $\pm$ 0.08** \\
+CP/PARAFAC & 0.58 $\pm$ 0.12** & 0.57 $\pm$ 0.14** & 0.65 $\pm$ 0.15** & 0.69 $\pm$ 0.12** \\
+PARAFAC2 & 0.64 $\pm$ 0.09** & 0.59 $\pm$ 0.11** & 0.71 $\pm$ 0.09** & 0.76 $\pm$ 0.07** \\
+NTF & 0.55 $\pm$ 0.11** & 0.54 $\pm$ 0.12** & 0.62 $\pm$ 0.13** & 0.67 $\pm$ 0.09** \\
+Spectral (Dhillon) & 0.51 $\pm$ 0.15** & 0.48 $\pm$ 0.16** & 0.58 $\pm$ 0.17** & 0.61 $\pm$ 0.11** \\
+Cheng-Church & 0.49 $\pm$ 0.14** & 0.52 $\pm$ 0.13** & 0.67 $\pm$ 0.12** & 0.59 $\pm$ 0.10** \\
+PLAID & 0.46 $\pm$ 0.16** & 0.49 $\pm$ 0.15** & 0.61 $\pm$ 0.16** & 0.57 $\pm$ 0.12** \\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}
-Values are mean ± standard deviation across 10-fold cross-validation. 
+Values are mean $\pm$ standard deviation across 10-fold cross-validation. 
 ** BY-adjusted $p < 0.001$ vs. DiMergeTCC (two-sided permutation tests; family-wise adjustment across methods and metrics).
 \end{tablenotes}
 \end{table*}
@@ -487,18 +487,18 @@ We systematically vary temporal window sizes beyond the default \{16, 32, 64\} f
 \begin{enumerate}
 \item \textbf{Standardization strategy comparison:}
 \begin{itemize}
-    \item Global z-score (current): Alignment = 0.87 ± 0.05
-    \item Per-embryo z-score: Alignment = 0.82 ± 0.07 (5.7\% decrease, $p = 0.02$)
-    \item Robust scaling (median/IQR): Alignment = 0.85 ± 0.06 (2.3\% decrease, $p = 0.18$)
-    \item Min-max scaling: Alignment = 0.79 ± 0.08 (9.2\% decrease, $p < 0.001$)
+    \item Global z-score (current): Alignment = 0.87 $\pm$ 0.05
+    \item Per-embryo z-score: Alignment = 0.82 $\pm$ 0.07 (5.7\% decrease, $p = 0.02$)
+    \item Robust scaling (median/IQR): Alignment = 0.85 $\pm$ 0.06 (2.3\% decrease, $p = 0.18$)
+    \item Min-max scaling: Alignment = 0.79 $\pm$ 0.08 (9.2\% decrease, $p < 0.001$)
 \end{itemize}
 
 \item \textbf{Missing data interpolation methods:}
 \begin{itemize}
-    \item Nearest-neighbor (current): $v_z$ effect size = 1.8 ± 0.2
-    \item Linear interpolation: $v_z$ effect size = 1.6 ± 0.3 (11\% decrease)
-    \item Kalman filtering: $v_z$ effect size = 1.7 ± 0.2 (6\% decrease)
-    \item Gaussian Process: $v_z$ effect size = 1.9 ± 0.2 (6\% improvement, not significant)
+    \item Nearest-neighbor (current): $v_z$ effect size = 1.8 $\pm$ 0.2
+    \item Linear interpolation: $v_z$ effect size = 1.6 $\pm$ 0.3 (11\% decrease)
+    \item Kalman filtering: $v_z$ effect size = 1.7 $\pm$ 0.2 (6\% decrease)
+    \item Gaussian Process: $v_z$ effect size = 1.9 $\pm$ 0.2 (6\% improvement, not significant)
 \end{itemize}
 \end{enumerate}
 
@@ -512,11 +512,11 @@ We systematically mask entire feature categories to assess their contribution:
 \toprule
 \textbf{Masked Feature Group} & \textbf{Dorsal Intercalation} & \textbf{Intestinal Morphogenesis} \\
 \midrule
-None (full model) & 0.87 ± 0.05 & 0.83 ± 0.06 \\
-Morphological features & -0.15 ± 0.04** & -0.21 ± 0.05** \\
-3DCSQ shape features & -0.12 ± 0.03** & -0.08 ± 0.03* \\
-Velocity/kinematic features & -0.22 ± 0.04** & -0.35 ± 0.06** \\
-Contact/topology features & -0.06 ± 0.02* & -0.04 ± 0.02 \\
+None (full model) & 0.87 $\pm$ 0.05 & 0.83 $\pm$ 0.06 \\
+Morphological features & -0.15 $\pm$ 0.04** & -0.21 $\pm$ 0.05** \\
+3DCSQ shape features & -0.12 $\pm$ 0.03** & -0.08 $\pm$ 0.03* \\
+Velocity/kinematic features & -0.22 $\pm$ 0.04** & -0.35 $\pm$ 0.06** \\
+Contact/topology features & -0.06 $\pm$ 0.02* & -0.04 $\pm$ 0.02 \\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}
@@ -529,14 +529,14 @@ Contact/topology features & -0.06 ± 0.02* & -0.04 ± 0.02 \\
 \subsubsection{Synthetic validation and power analysis}
 To validate detection sensitivity, we inject synthetic tri-blocks with known ground truth:
 \begin{itemize}
-\item \textbf{Block size sensitivity:} Minimum detectable block size is 8×12×15 (cells×time×features) at 90\% power with $\alpha = 0.05$.
+\item \textbf{Block size sensitivity:} Minimum detectable block size is 8$\times$12$\times$15 (cells$\times$time$\times$features) at 90\% power with $\alpha = 0.05$.
 \item \textbf{Signal-to-noise ratio:} Detection power drops from 95\% to 50\% as SNR decreases from 2.0 to 1.2, establishing practical operating ranges.
 \item \textbf{Temporal fragmentation:} Blocks split across 2-3 temporal segments are recovered with 85\% accuracy; >3 segments reduce accuracy to 65\%.
 \end{itemize}
 
 \subsubsection{Cross-embryo stability and external validation}
 \begin{itemize}
-\item \textbf{Leave-one-embryo-out validation:} Mean tri-modal Jaccard similarity = 0.68 ± 0.12 across N=8 embryos (95\% CI: [0.61, 0.75]).
+\item \textbf{Leave-one-embryo-out validation:} Mean tri-modal Jaccard similarity = 0.68 $\pm$ 0.12 across N=8 embryos (95\% CI: [0.61, 0.75]).
 \item \textbf{Batch effect assessment:} Imaging sessions separated by >1 week show 8-12\% reduced alignment scores, but core patterns remain significant ($p < 0.001$).
 \item \textbf{Synthetic missingness tolerance:} Alignment scores remain >0.80 up to 20\% additional missing data; degradation becomes significant at 25\% ($p < 0.01$).
 \end{itemize}
@@ -544,8 +544,8 @@ To validate detection sensitivity, we inject synthetic tri-blocks with known gro
 \subsubsection{Statistical null distributions and multiple testing}
 \begin{itemize}
 \item \textbf{Permutation strategy:} 10,000 circular time shifts per embryo preserve temporal autocorrelation structure while breaking biological coordination; we also apply per-cell independent shifts and Fourier phase randomization for conservative nulls when needed.
-\item \textbf{FDR control:} Benjamini--Yekutieli procedure controls false discovery rate at $\leq 5\%$ across 180 statistical tests (45 tri-clusters × 4 validation metrics). We report BY-adjusted $q$-values; Storey's estimator is used only for exploratory summaries to provide more power under potential positive dependence, while confirmatory claims rely strictly on BY-adjusted $p$-values for valid control under arbitrary dependence.
-\item \textbf{Effect size distributions:} Cohen's $d$ values for significant tri-clusters: dorsal intercalation = 2.1 ± 0.4, intestinal morphogenesis = 1.8 ± 0.3 (both large effect sizes).
+\item \textbf{FDR control:} Benjamini--Yekutieli procedure controls false discovery rate at $\leq 5\%$ across 180 statistical tests (45 tri-clusters $\times$ 4 validation metrics). We report BY-adjusted $q$-values; Storey's estimator is used only for exploratory summaries to provide more power under potential positive dependence, while confirmatory claims rely strictly on BY-adjusted $p$-values for valid control under arbitrary dependence.
+\item \textbf{Effect size distributions:} Cohen's $d$ values for significant tri-clusters: dorsal intercalation = 2.1 $\pm$ 0.4, intestinal morphogenesis = 1.8 $\pm$ 0.3 (both large effect sizes).
 \end{itemize}
 
 All ablations demonstrate that DiMergeTCC's performance depends on the integrated combination of tensor structure, probabilistic candidate generation, hierarchical merging with per-mode safeguards, and appropriate preprocessing. No single component dominates, but kinematic features and temporal window selection are most critical for biological pattern recovery.
