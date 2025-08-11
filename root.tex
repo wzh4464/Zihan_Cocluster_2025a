@@ -151,9 +151,10 @@ From each 3D segmented cell, we compute:
     \item Contact area $A_C$: total area of membrane--membrane interfaces with neighbors.
 \end{itemize}
 We further define a \textbf{dimensionless irregularity index}
-\[
-\eta = \frac{\sqrt{A_S}}{\sqrt[4]{V^3}},
-\]
+\begin{equation}
+\eta = \frac{\sqrt{A_S}}{\sqrt[4]{V^3}}
+\label{eq:irregularity-index}
+\end{equation}
 which measures deviation from a sphere and captures deformation intensity during migration/intercalation.
 
 \subsubsection{3DCSQ shape spectral features}
@@ -204,19 +205,20 @@ In practice, we set $K_g = 15$, $K_h = 15$, and $L_s = 20$ based on variance exp
 
 \subsection{Tensor construction}
 For each cell $c = 1,\dots,C$ and time $t = 1,\dots,T$, we concatenate all standardized features (z-score using discovery set parameters, frozen on validation embryos) to form $\mathbf{z}_{c,t} \in \mathbb{R}^F$. Stacking over cells and time yields a third-order tensor:
-\[
+\begin{equation}
 \mathcal{X} \in \mathbb{R}^{C \times T \times F}, \quad \mathcal{X}(c,t,f) = z_{c,t}^{(f)}.
-\]
+\label{eq:tensor-def}
+\end{equation}
 The feature set includes the morphological, 3DCSQ static, and 3DCSQ dynamic features described above.
 
 \subsection{Tensor Co-Clustering (TCC): Extending DiMergeCo to three modes}
 
 \subsubsection{Objective and model}
 We extend the \textbf{Distributed Merge Co-clustering} (DiMergeCo) framework from matrices to tensors to jointly discover \textbf{cell subsets $\times$ time windows $\times$ feature subsets}. We adopt a tensor block model: within each block $(\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u)$, the entries are well-approximated by a low-rank or block-constant structure:
-\[
-\min_{\{\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u\}}
-\sum_{u=1}^{U} \left\| \mathcal{X}_{\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u} - \hat{\mathcal{X}}_u \right\|_F^2
-\]
+\begin{equation}
+\min_{\{\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u\}} \sum_{u=1}^{U} \left\| \mathcal{X}_{\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u} - \hat{\mathcal{X}}_u \right\|_F^2
+\label{eq:block-objective}
+\end{equation}
 subject to $\hat{\mathcal{X}}_u$ being low-rank/block-constant.
 
 \subsubsection{Probabilistic partitioning in three modes}
@@ -294,9 +296,10 @@ Consequently, choosing $T_p\ge \lceil \log\delta/\log(1-q)\rceil$ ensures failur
 Candidate generation operates independently across the three modes; the overall bound uses a dependence discount $\kappa$ or a conservative Bonferroni-style term to account for residual cross-mode dependence.
 
 \textbf{Practical guidance:} In the discovery set, we estimate $\hat q$ and a conservative lower bound $\underline q$ by plugging in $\kappa=1-\hat\varepsilon_{\mathrm{dep}}$ with $\hat\varepsilon_{\mathrm{dep}}$ obtained via block bootstrap across embryos and features, and using Jeffreys/Wilson lower bounds for $\tilde q_\bullet$. We set
-\[
-T_p = \Big\lceil \frac{\log \delta}{\log(1-\underline q)} \Big\rceil, \quad \delta\in(0,1),
-\]
+\begin{equation}
+T_p = \Big\lceil \frac{\log \delta}{\log(1-\underline q)} \Big\rceil, \quad \delta\in(0,1)
+\label{eq:Tp-selection}
+\end{equation}
 optionally applying a safety factor $\underline q \leftarrow 0.8\,\underline q$ when sample sizes are small. We empirically calibrate the $\delta$--$T_p$ curve on semi-synthetic planted blocks and report the realized miss rate vs. $1-(1-\underline q)^{T_p}$ in Supplementary Fig.~S2, confirming the theory as an upper bound rather than a point predictor.
 
 \subsection{Objective function and constraints}
