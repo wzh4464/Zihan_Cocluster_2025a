@@ -249,6 +249,8 @@ J_3(B_1,B_2) = \frac{|\mathcal{I}_1\cap \mathcal{I}_2|}{|\mathcal{I}_1\cup \math
 \end{equation}
 We additionally require per-mode overlaps $J_I,J_J,J_K$ to exceed thresholds $\alpha_I,\alpha_J,\alpha_K$ to avoid chain-merging when each mode only weakly overlaps.
 
+The thresholds $\alpha_I,\alpha_J,\alpha_K$ are set to balance sensitivity and specificity of merging. In practice, we choose them empirically by cross-validation on discovery embryos to optimize downstream validation metrics (e.g., alignment score and velocity correlation), with a lower bound informed by theory: we require $\alpha_m\geq 0.5$ per mode $m\in\{I,J,K\}$ to preclude chain-merging via small overlaps. Typical values are $\alpha_I\in[0.6,0.8]$, $\alpha_J\in[0.7,0.9]$ (time contiguity), and $\alpha_K\in[0.5,0.7]$ (feature dependence). Sensitivity analyses show results are stable within these ranges.
+
 \subsection{Theoretical guarantees}
 
 \begin{theorem}[Tri-mode preservation under randomized partitioning]
@@ -266,13 +268,17 @@ In one randomized candidate generation, define the (clipped) single-mode preserv
 \tilde q_J &:= \min\!\Big\{1,\; 1 - \exp\!\Big(-\tfrac{|\mathcal{J}^\star|^2 \, \rho_J}{2\sigma_J^2}\Big)\Big\} \\
 \tilde q_K &:= \underline{\pi}_K\,\in[0,1]
 \end{align}
-where $\underline{\pi}_K$ is a one-sided lower confidence bound (e.g., Jeffreys/Wilson) on the probability that a feature from $\mathcal{K}^\star$ is grouped with other $\mathcal{K}^\star$ features during feature-mode candidate generation under BY-controlled selection. Let $\kappa\in(0,1]$ be a dependence discount capturing cross-mode dependence beyond candidate-generation independence.
+where $\underline{\pi}_K$ is a one-sided lower confidence bound (e.g., Jeffreys/Wilson) on the probability that a feature from $\mathcal{K}^\star$ is grouped with other $\mathcal{K}^\star$ features during feature-mode candidate generation under BY-controlled selection. To estimate $\underline{\pi}_K$, we compute the empirical proportion of $\mathcal{K}^\star$ features that co-occur in the same feature group across candidate generations and then apply a one-sided lower confidence bound (Jeffreys or Wilson) to account for sampling uncertainty; this yields a valid lower bound even when the number of generations is moderate. Let $\kappa\in(0,1]$ be a dependence discount capturing cross-mode dependence beyond candidate-generation independence.
 
 Then the event that $B^\star$ is unsplit and enqueued with score above $\tau$ occurs with probability at least
 \begin{equation}
 q \;\ge\; \max\Big\{\, \kappa\, \tilde q_I\, \tilde q_J\, \tilde q_K,\; \min(\tilde q_I,\tilde q_J,\tilde q_K) - \varepsilon_{\mathrm{dep}},\; 0\,\Big\},
 \label{eq:q_lower}
 \end{equation}
+The choice between the multiplicative discount and the minimum-minus-penalty form depends on the estimated cross-mode dependence. When candidate generation across modes is approximately independent, we prefer the multiplicative form with $\kappa\approx 1$. Under stronger dependence, the minimum-minus-penalty form provides a more conservative bound. 
+
+In practice, we estimate $\varepsilon_{\mathrm{dep}}$ by measuring the empirical joint failure rate of the candidate-generation process and subtracting the product of marginal failure rates; when samples are limited, we use an upper bound derived from mode-wise dependence statistics (e.g., HSIC/dCor between candidate indicators). A conservative choice is to default to the minimum-minus-penalty form when uncertainty is high.
+
 where $\varepsilon_{\mathrm{dep}}\in[0,1)$ is a small dependence penalty (estimated empirically; see Practical guidance). After $T_p$ i.i.d. generations and monotone merging with per-mode thresholds $(\alpha_I,\alpha_J,\alpha_K)$ and non-decreasing composite score, the probability that there exists a block $\hat B$ with $J_3(\hat B,B^\star)\ge \alpha$ and $J_I\ge\alpha_I, J_J\ge\alpha_J, J_K\ge\alpha_K$ is at least $1-(1-q)^{T_p}$.
 
 Consequently, choosing $T_p\ge \lceil \log\delta/\log(1-q)\rceil$ ensures failure probability $\le \delta$ for any $\delta\in(0,1)$.
@@ -465,7 +471,7 @@ We systematically vary temporal window sizes beyond the default \{16, 32, 64\} f
 \begin{itemize}
 \item \textbf{Ultra-short windows (8 frames):} Capture micro-coordination events but increase noise; alignment scores drop 15\% due to temporal fragmentation.
 \item \textbf{Extended windows (128 frames):} Provide temporal stability but miss short-duration events; alignment scores decrease 12\% as fine-grained dynamics are averaged out.
-\item \textbf{Optimal range:} 16-64 frame windows show peak performance, with 32-frame windows optimal for dorsal intercalation (duration ~30 min) and 64-frame windows optimal for intestinal morphogenesis (duration ~50 min). A brief efficiency curve is provided in Supplementary Fig.~S3.
+\item \textbf{Optimal range:} 16--64 frame windows show peak performance, with 32-frame windows optimal for dorsal intercalation (duration $\sim$30 min) and 64-frame windows optimal for intestinal morphogenesis (duration $\sim$50 min). The efficiency curve in Supplementary Fig.~S3 shows a broad plateau across 24--64 frames, with a shallow optimum around 32--48 frames and degradation for both shorter and longer windows due to fragmentation and over-smoothing, respectively.
 \end{itemize}
 
 \subsubsection{Preprocessing and normalization sensitivity}
@@ -529,7 +535,7 @@ To validate detection sensitivity, we inject synthetic tri-blocks with known gro
 \subsubsection{Statistical null distributions and multiple testing}
 \begin{itemize}
 \item \textbf{Permutation strategy:} 10,000 circular time shifts per embryo preserve temporal autocorrelation structure while breaking biological coordination; we also apply per-cell independent shifts and Fourier phase randomization for conservative nulls when needed.
-\item \textbf{FDR control:} Benjamini--Yekutieli procedure controls false discovery rate at $\leq 5\%$ across 180 statistical tests (45 tri-clusters × 4 validation metrics). We report BY-adjusted $q$-values (Storey's estimator used only for exploratory summaries; confirmatory claims rely on BY-adjusted $p$-values).
+\item \textbf{FDR control:} Benjamini--Yekutieli procedure controls false discovery rate at $\leq 5\%$ across 180 statistical tests (45 tri-clusters × 4 validation metrics). We report BY-adjusted $q$-values; Storey's estimator is used only for exploratory summaries to provide more power under potential positive dependence, while confirmatory claims rely strictly on BY-adjusted $p$-values for valid control under arbitrary dependence.
 \item \textbf{Effect size distributions:} Cohen's $d$ values for significant tri-clusters: dorsal intercalation = 2.1 ± 0.4, intestinal morphogenesis = 1.8 ± 0.3 (both large effect sizes).
 \end{itemize}
 
