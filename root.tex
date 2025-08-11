@@ -90,8 +90,8 @@
 
 \abstract{
 \textbf{Motivation:} The embryonic development of the nematode \textit{Caenorhabditis elegans} is captured by modern 4D microscopy, yielding rich spatio-temporal datasets. Automatically discovering groups of cells that behave coordinately over particular time windows remains challenging when matrix-based representations disrupt higher-order relationships.\\
-\textbf{Results:} We introduce DiMergeTCC, a tensor co-clustering framework that extends Distributed Merge Co-clustering from matrices to three-mode tensors (cells $\times$ time $\times$ features). The method combines randomized candidate generation with probabilistic preservation guarantees, parallel local three-way clustering, hierarchical merging via three-mode Jaccard similarity, and FDR-controlled statistical testing. We provide theoretical bounds on the failure probability for reconstructing true tri-blocks after $T_p$ candidate generations, enabling principled parameter selection. Applied to \textit{C.~elegans} embryogenesis without event labels, DiMergeTCC automatically recovered dorsal intercalation and intestinal primordium organization. Quantitative validation shows 22–34\% improvement in literature time window alignment over tensor/matrix baselines at matched FDR, with velocity and shape attributions remaining stable under 10–20\% additional missingness.\\
-\textbf{Availability:} Code and containers: \href{https://zenodo.org/record/anonymous-12345}{https://zenodo.org/record/anonymous-12345}. Complete Snakemake workflow reproduces all figures.\\
+\textbf{Results:} We introduce DiMergeTCC, a tensor co-clustering framework that extends Distributed Merge Co-clustering from matrices to three-mode tensors (cells $\times$ time $\times$ features). The method combines randomized candidate generation with probabilistic preservation guarantees, parallel local three-way clustering, hierarchical merging via three-mode Jaccard similarity with per-mode thresholds, and FDR-controlled statistical testing (Benjamini--Yekutieli). We provide conservative, dependence-aware bounds on the failure probability for reconstructing true tri-blocks after $T_p$ candidate generations, enabling principled parameter selection. Applied to \textit{C.~elegans} embryogenesis without event labels, DiMergeTCC automatically recovered dorsal intercalation and intestinal primordium organization. Quantitative validation shows 22–34\% improvement in literature time window alignment over tensor/matrix baselines at matched FDR, with velocity and shape attributions remaining stable under 10–20\% additional missingness.\\
+\textbf{Availability:} Code and containers: \href{https://zenodo.org/record/anonymous-12345}{link redacted for review; to be released upon acceptance}. Complete Snakemake workflow reproduces all figures.\\
 \textbf{Contact:} \href{mailto:wzh4464@gmail.com}{wzh4464@gmail.com}
 }
 
@@ -112,12 +112,10 @@ Tensors, or multi-dimensional arrays, provide a more natural and powerful framew
 
 In this work, we propose a novel framework for this purpose by extending the Distributed Merge Co-clustering (DiMergeCo) algorithm from matrices to tensors. Co-clustering, or biclustering, simultaneously groups rows and columns of a matrix, and has proven highly effective in bioinformatics for finding local patterns, such as subsets of genes that are co-expressed under a subset of conditions~\citep{zapala2006MultivariateRegressionAnalysis}. Our tensor extension, DiMergeTCC, identifies "co-clusters" that are cohesive blocks within the data tensor, corresponding to groups of cells exhibiting similar feature dynamics over contiguous time intervals. Critically, our extension maintains the strong probabilistic guarantees of the original DiMergeCo for preserving co-cluster integrity during the analysis of large datasets.
 
-To validate our approach, we applied it to a comprehensive 4D dataset of C. elegans embryogenesis. By analyzing a rich set of features including 3D shape descriptors, kinematics, and lineage information, our method successfully rediscovered two well-characterized morphogenetic events without any a priori biological annotation: dorsal intercalation and the formation of the intestinal primordium~\citep{bao2006AutomatedCellLineage,kaletta1997BinarySpecificationEmbryonic,artal-sanz2006CaenorhabditisElegansVersatile,sato2015LeftRightAsymmetric,stoeckius2009LargescaleSortingElegans}. This demonstrates that DiMergeTCC is a powerful, label-free tool for pattern discovery in high-dimensional developmental data, capable of generating concrete, biologically meaningful hypotheses.
-
 \textbf{Contributions.} The main contributions of this work are:
 \begin{enumerate}
-\item \textbf{Methodological:} We propose DiMergeTCC, extending distributed merge co-clustering from matrices to cell$\times$time$\times$feature three-mode tensors. The method comprises randomized candidate generation, parallel local three-way clustering, and hierarchical merging based on three-mode Jaccard similarity, with temporal total variation regularization promoting within-block smoothness. We provide failure probability upper bounds for complete preservation and merging-based reconstruction of true blocks across $T_p$ candidates, offering actionable fidelity guarantees for large-scale unsupervised discovery.
-\item \textbf{Statistical assessment:} We introduce empirical null distributions based on circular time permutation and feature shuffling, employing the Benjamini--Yekutieli procedure for FDR control. Robustness is systematically evaluated through leave-one-embryo-out validation, consistency Jaccard measures, and missingness sensitivity analysis.
+\item \textbf{Methodological:} We propose DiMergeTCC, extending distributed merge co-clustering from matrices to cell$\times$time$\times$feature three-mode tensors. The method comprises randomized candidate generation, parallel local three-way clustering, and hierarchical merging based on three-mode Jaccard similarity with per-mode thresholds and non-decreasing composite score with uncertainty control. We provide failure probability upper bounds for complete preservation and merging-based reconstruction of true blocks across $T_p$ candidates, with explicit dependence correction, offering actionable fidelity guarantees for large-scale unsupervised discovery.
+\item \textbf{Statistical assessment:} We introduce empirical null distributions based on circular time permutation and feature shuffling, augmented with per-cell independent shifts, phase randomization, and block bootstrap to respect dependence, employing the Benjamini--Yekutieli procedure for FDR control. Robustness is systematically evaluated through leave-one-embryo-out validation, consistency Jaccard measures, and missingness sensitivity analysis.
 \item \textbf{Biological validation:} Without event labels, we automatically recover the temporal windows, velocity fields, and morphological attributions for dorsal intercalation and intestinal primordium organization. Compared to tensor/matrix baselines, time window alignment achieves 22--34\% improvement at matched FDR, with attributions remaining stable under 10--20\% additional missingness.
 \end{enumerate}
 
@@ -127,13 +125,13 @@ To validate our approach, we applied it to a comprehensive 4D dataset of C. eleg
 We present DiMergeTCC (Distributed Merge Tensor Co-Clustering), a probabilistically-guaranteed tensor co-clustering method that extends DiMergeCo from matrices to three-mode tensors. The algorithm comprises four main stages:
 
 \begin{enumerate}
-\item \textbf{Randomized candidate generation:} Generate $T_p$ independent tri-mode partitions (cell subsets $\times$ time windows $\times$ feature groups) using lineage/spatial proximity weighting, multi-scale temporal windows (16/32/64 frames), and mutual information-based feature grouping.
+\item \textbf{Randomized candidate generation:} Generate $T_p$ independent tri-mode partitions (cell subsets $\times$ time windows $\times$ feature groups) using lineage/spatial proximity weighting, multi-scale temporal windows (16/32/64 frames), and dependency-aware feature grouping.
 
 \item \textbf{Parallel local three-way clustering:} For each candidate partition, perform mode-3 unfolding followed by spectral co-clustering (SCC) or projective nonnegative matrix tri-factorization (PNMTF) to identify locally coherent cell--time biclusters, then regroup features by within-block variance contribution.
 
-\item \textbf{Hierarchical merging and deduplication:} Insert all local tri-blocks into a priority queue ranked by composite score (fitting error + regularization). Merge blocks with high three-mode Jaccard overlap when the merger maintains or increases the composite score.
+\item \textbf{Hierarchical merging and deduplication:} Insert all local tri-blocks into a priority queue ranked by composite score (fitting error + regularization). Merge blocks with high three-mode Jaccard overlap only if per-mode overlaps exceed thresholds and the merger maintains or increases the composite score within a non-decreasing confidence interval.
 
-\item \textbf{Statistical testing and FDR control:} Apply circular time shifts and feature shuffling to construct empirical null distributions for alignment scores, velocity biases, and feature attributions. Control false discovery rate using the Benjamini--Yekutieli procedure across all discovered tri-clusters.
+\item \textbf{Statistical testing and FDR control:} Apply circular time shifts and feature shuffling to construct empirical null distributions for alignment scores, velocity biases, and feature attributions (augmented nulls described below). Control false discovery rate using the Benjamini--Yekutieli procedure across all discovered tri-clusters.
 \end{enumerate}
 
 Each stage is designed to preserve the probabilistic guarantees: true tri-blocks are likely to be sampled intact (Stage 1), identified locally (Stage 2), merged correctly (Stage 3), and validated rigorously (Stage 4).
@@ -172,7 +170,7 @@ For interpretability, we retain components in descending order of explained vari
 We align each embryo's timeline so that the end of the 4-cell stage is $t=0$ (corresponding to approximately 150-160 minutes post-fertilization). All time references throughout this paper are relative to this $t=0$ reference point unless explicitly noted otherwise. All datasets are resampled to a common frame rate (1.5~min) by linear interpolation; lineage mappings follow CMap's identity files. Missing frames are filled by nearest-neighbor interpolation and masked to avoid artificial correlations in co-clustering.
 
 \subsubsection{Coordinate system convention}
-We adopt a standard embryonic coordinate system: $x$-axis represents anterior-posterior (AP) direction, $y$-axis represents left-right (LR) direction, and $z$-axis represents dorsal-ventral (DV) direction, aligned with the imaging axis. Negative $v_z$ velocities correspond to inward/ventral movement (toward the imaging objective), while positive $v_z$ corresponds to outward/dorsal movement. This convention is used consistently throughout velocity field analyses and directional measurements.
+We adopt a standard embryonic coordinate system: $x$-axis represents anterior-posterior (AP) direction, $y$-axis represents left-right (LR) direction, and $z$-axis represents dorsal-ventral (DV) direction, aligned with the imaging axis. Negative $v_z$ velocities correspond to inward/ventral movement (toward the imaging objective), while positive $v_z$ corresponds to outward/dorsal movement. This convention is used consistently throughout velocity field analyses and directional measurements; a schematic is provided in Supplementary Fig.~S1.
 
 \subsection{Feature dictionary}
 Table~\ref{tab:feature-dict} lists the complete feature set used for tensor construction. Morphological derivatives ($\Delta$) are computed as frame-to-frame differences.
@@ -222,11 +220,11 @@ We extend the \textbf{Distributed Merge Co-clustering} (DiMergeCo) framework fro
 subject to $\hat{\mathcal{X}}_u$ being low-rank/block-constant.
 
 \subsubsection{Probabilistic partitioning in three modes}
-Following DiMergeCo's ``probability of preservation'' principle, we stochastically generate:
+Following DiMergeCo's "probability of preservation" principle, we stochastically generate:
 \begin{itemize}
     \item \textbf{Cell-mode candidates}: weighted by lineage/space proximity and activity ($\eta$, derivatives), to avoid splitting correlated cells.
     \item \textbf{Time-mode candidates}: multi-scale sliding windows ($16$, $32$, $64$ frames) to capture both short cell-cycle changes and longer organogenesis events.
-    \item \textbf{Feature-mode candidates}: initialized by mutual information and correlation thresholds (morphology and 3DCSQ features mixed in layers), with collinear components sparsified.
+    \item \textbf{Feature-mode candidates}: initialized by dependence tests using HSIC or distance correlation with BY-controlled significance, with collinear components sparsified.
 \end{itemize}
 By repeating the partitioning $T_p$ times, true blocks of size above a minimum threshold are likely ($\geq 1-\delta$) to appear intact in at least one candidate, reducing fragmentation risk.
 
@@ -240,13 +238,14 @@ For each candidate $(\mathcal{I},\mathcal{J},\mathcal{K})$:
 This stage is fully parallelizable; each worker processes distinct blocks.
 
 \subsubsection{Hierarchical merging and deduplication}
-All local blocks are inserted into a priority queue sorted by composite score. Blocks with high \textbf{three-mode Jaccard} overlap and non-decreasing score upon merging are merged (three-mode union) until convergence.
+All local blocks are inserted into a priority queue sorted by composite score. Blocks with high \textbf{three-mode Jaccard} overlap and non-decreasing score upon merging are merged until convergence, subject to per-mode minimum overlaps and uncertainty-aware score checks.
 
 The \textbf{three-mode Jaccard similarity} between two tri-blocks $B_1 = (\mathcal{I}_1, \mathcal{J}_1, \mathcal{K}_1)$ and $B_2 = (\mathcal{I}_2, \mathcal{J}_2, \mathcal{K}_2)$ is defined as:
 \begin{equation}
 J_3(B_1,B_2) = \frac{|\mathcal{I}_1\cap \mathcal{I}_2|}{|\mathcal{I}_1\cup \mathcal{I}_2|} \cdot \frac{|\mathcal{J}_1\cap \mathcal{J}_2|}{|\mathcal{J}_1\cup \mathcal{J}_2|} \cdot \frac{|\mathcal{K}_1\cap \mathcal{K}_2|}{|\mathcal{K}_1\cup \mathcal{K}_2|}
 \label{eq:trimode_jaccard}
 \end{equation}
+We additionally require per-mode overlaps $J_I,J_J,J_K$ to exceed thresholds $\alpha_I,\alpha_J,\alpha_K$ to avoid chain-merging when each mode only weakly overlaps.
 
 \subsection{Theoretical guarantees}
 
@@ -256,48 +255,58 @@ Let $B^\star=(\mathcal I^\star,\mathcal J^\star,\mathcal K^\star)$ be a contiguo
 \begin{itemize}
     \item[(A1)] \textbf{Cell-mode coherence}: cells in $\mathcal{I}^\star$ have pairwise correlation $\geq \rho_I$ and spatial/lineage proximity
     \item[(A2)] \textbf{Time-mode contiguity}: $\mathcal{J}^\star$ forms a contiguous interval with temporal autocorrelation $\geq \rho_J$
-    \item[(A3)] \textbf{Feature-mode sparsity}: features in $\mathcal{K}^\star$ have mutual information $\geq \rho_K$ within the tri-block
+    \item[(A3)] \textbf{Feature-mode dependence}: features in $\mathcal{K}^\star$ pass a dependence test (HSIC/dCor) at level $\alpha_K$ within the tri-block
 \end{itemize}
 
-In one randomized candidate generation, the event that $B^\star$ is unsplit and enqueued with score above $\tau$ occurs with probability at least $q = q_I q_J q_K$, where:
+In one randomized candidate generation, define the (clipped) single-mode preservation terms
 \begin{align}
-q_I &\geq \Phi\left(\frac{\sqrt{|\mathcal{I}^\star|} \rho_I}{\sigma_I}\right) \label{eq:q_I} \\
-q_J &\geq 1 - \exp\left(-\frac{|\mathcal{J}^\star|^2 \rho_J}{2\sigma_J^2}\right) \label{eq:q_J} \\
-q_K &\geq \frac{|\mathcal{K}^\star| \rho_K}{\log(F)} \label{eq:q_K}
+\tilde q_I &:= \min\!\Big\{1,\; \Phi\!\Big(\tfrac{\sqrt{|\mathcal{I}^\star|} \, \rho_I}{\sigma_I}\Big)\Big\} \\
+\tilde q_J &:= \min\!\Big\{1,\; 1 - \exp\!\Big(-\tfrac{|\mathcal{J}^\star|^2 \, \rho_J}{2\sigma_J^2}\Big)\Big\} \\
+\tilde q_K &:= \underline{\pi}_K\,\in[0,1]
 \end{align}
+where $\underline{\pi}_K$ is a one-sided lower confidence bound (e.g., Jeffreys/Wilson) on the probability that a feature from $\mathcal{K}^\star$ is grouped with other $\mathcal{K}^\star$ features during feature-mode candidate generation under BY-controlled selection. Let $\kappa\in(0,1]$ be a dependence discount capturing cross-mode dependence beyond candidate-generation independence.
 
-After $T_p$ i.i.d.\ generations and monotone merging with overlap threshold $\alpha$, the probability that there exists a block $\hat B$ with $J_3(\hat B,B^\star)\ge \alpha$ is at least $1-(1-q)^{T_p}$. 
+Then the event that $B^\star$ is unsplit and enqueued with score above $\tau$ occurs with probability at least
+\begin{equation}
+q \;\ge\; \max\Big\{\, \kappa\, \tilde q_I\, \tilde q_J\, \tilde q_K,\; \min(\tilde q_I,\tilde q_J,\tilde q_K) - \varepsilon_{\mathrm{dep}},\; 0\,\Big\},
+\label{eq:q_lower}
+\end{equation}
+where $\varepsilon_{\mathrm{dep}}\in[0,1)$ is a small dependence penalty (estimated empirically; see Practical guidance). After $T_p$ i.i.d. generations and monotone merging with per-mode thresholds $(\alpha_I,\alpha_J,\alpha_K)$ and non-decreasing composite score, the probability that there exists a block $\hat B$ with $J_3(\hat B,B^\star)\ge \alpha$ and $J_I\ge\alpha_I, J_J\ge\alpha_J, J_K\ge\alpha_K$ is at least $1-(1-q)^{T_p}$.
 
-Consequently, choosing $T_p\ge \lceil \log\delta/\log(1-q)\rceil$ ensures failure probability $\le \delta$.
+Consequently, choosing $T_p\ge \lceil \log\delta/\log(1-q)\rceil$ ensures failure probability $\le \delta$ for any $\delta\in(0,1)$.
 \end{theorem}
 
 \begin{proof}[Proof sketch]
-(i) Lower-bound $q_I,q_J,q_K$ via concentration inequalities for intra-block affinities: $q_I$ follows from Gaussian concentration for correlated variables, $q_J$ from exponential bounds on contiguous window coverage, and $q_K$ from mutual information thresholding with logarithmic correction.
-(ii) Independence across modes follows from the randomized partitioning design where cell, time, and feature candidates are generated separately.
-(iii) Monotonicity of the composite score under union merges ensures that true blocks, once captured, are not discarded during hierarchical merging.
-(iv) Apply the union bound over $T_p$ independent trials to obtain the final preservation guarantee.
+(i) Lower-bound $\tilde q_I,\tilde q_J$ via concentration inequalities for intra-block affinities and contiguous coverage; clip to $[0,1]$ for well-defined probabilities. Replace mutual-information dependence with HSIC/dCor to ensure dimensionless, thresholded selection; define $\tilde q_K$ as a validated lower bound on within-support grouping probability under BY control.
+(ii) Independence applies only to \emph{candidate-generation} in each mode; downstream clustering/merging may induce dependence, captured by the multiplicative discount $\kappa$ or the Bonferroni-type conservative term $\min(\cdot)-\varepsilon_{\mathrm{dep}}$.
+(iii) Monotonicity of the composite score upon union merges is enforced algorithmically with per-mode thresholds and non-decreasing score within bootstrap confidence intervals, preventing adverse merges that could discard true blocks.
+(iv) Apply the union bound over $T_p$ independent trials to obtain the preservation guarantee for at least one candidate; monotone merging preserves or improves coverage under the stated constraints.
 \end{proof}
 
 \textbf{Assumptions and parameter definitions:} To make the bounds operationable, we define the noise scales and thresholds:
 \begin{itemize}
-\item $\sigma_I, \sigma_J, \sigma_K$ represent the empirical standard deviations of cell correlation estimates, temporal autocorrelation estimates, and feature mutual information estimates, respectively.
+\item $\sigma_I, \sigma_J$ represent the empirical standard deviations of cell correlation estimates and temporal autocorrelation estimates, respectively.
 \item $\rho_J$ is defined as the lag-1 autocorrelation averaged within the time block $\mathcal{J}^\star$.
 \item $\rho_I$ is the lower bound of pairwise correlations between cells within $\mathcal{I}^\star$.
-\item $\rho_K$ is the lower bound of mutual information between features within $\mathcal{K}^\star$, estimated using the Kraskov method.
+\item $\underline{\pi}_K$ is obtained from discovery data by resampling: estimate the probability that features from $\mathcal{K}^\star$ co-occur in the same feature group when selection is driven by BY-controlled HSIC/dCor exceedance; report the one-sided lower confidence bound.
 \end{itemize}
 
-Candidate generation operates independently across the three modes: cell candidates use lineage/spatial proximity, time candidates use multi-scale sliding windows, and feature candidates use correlation/mutual information thresholds. This ensures that $q \approx q_I \cdot q_J \cdot q_K$ under the independence assumption.
+Candidate generation operates independently across the three modes; the overall bound uses a dependence discount $\kappa$ or a conservative Bonferroni-style term to account for residual cross-mode dependence.
 
-\textbf{Practical guidance:} In the discovery set, we estimate $q$ from empirical quantities and set $T_p = 1000$ to ensure failure probability $\delta = (1-q)^{T_p} \leq 0.01$. When estimated $q < 0.01$, we increase $T_p$ accordingly.
+\textbf{Practical guidance:} In the discovery set, we estimate $\hat q$ and a conservative lower bound $\underline q$ by plugging in $\kappa=1-\hat\varepsilon_{\mathrm{dep}}$ with $\hat\varepsilon_{\mathrm{dep}}$ obtained via block bootstrap across embryos and features, and using Jeffreys/Wilson lower bounds for $\tilde q_\bullet$. We set
+\[
+T_p = \Big\lceil \frac{\log \delta}{\log(1-\underline q)} \Big\rceil, \quad \delta\in(0,1),
+\]
+optionally applying a safety factor $\underline q \leftarrow 0.8\,\underline q$ when sample sizes are small. We empirically calibrate the $\delta$--$T_p$ curve on semi-synthetic planted blocks and report the realized miss rate vs. $1-(1-\underline q)^{T_p}$ in Supplementary Fig.~S2, confirming the theory as an upper bound rather than a point predictor.
 
 \subsection{Objective function and constraints}
 
 The complete optimization objective combines fitting error with regularization:
 \begin{equation}
-\mathcal{L}(\hat{\mathcal{X}}_u) = \|\mathcal{X}_{\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u}-\hat{\mathcal{X}}_u\|_F^2 + \lambda_r \text{rank}_{\text{Tucker}}(\hat{\mathcal{X}}_u) + \lambda_c \text{TV}_t(\hat{\mathcal{X}}_u)
+\mathcal{L}(\hat{\mathcal{X}}_u) = \|\mathcal{X}_{\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u}-\hat{\mathcal{X}}_u\|_F^2 + \lambda_r \, \text{rank}_{\text{Tucker}}(\hat{\mathcal{X}}_u) + \lambda_c \, \text{TV}_t(\hat{\mathcal{X}}_u)
 \label{eq:objective}
 \end{equation}
-where $\text{TV}_t$ is the total variation in the time mode (encouraging temporal smoothness) and $\lambda_r, \lambda_c$ are regularization parameters chosen via cross-validation.
+where $\text{TV}_t$ is the $\ell_1$ total variation along the time mode using forward finite differences (isotropic in features/cells within each block unless stated), and $\lambda_r, \lambda_c$ are regularization parameters chosen via cross-validation.
 
 \subsection{Computational complexity}
 
@@ -305,20 +314,22 @@ The algorithm has the following complexity bounds:
 \begin{itemize}
 \item \textbf{Candidate generation}: $O(T_p(C\log C + T\log T + F\log F))$ 
 \item \textbf{Local clustering}: $O(\sum_u |\mathcal{I}_u||\mathcal{J}_u||\mathcal{K}_u| \cdot r)$ where $r$ is the target rank
-\item \textbf{Hierarchical merging}: $O(M\log M)$ where $M$ is the number of candidate blocks
+\item \textbf{Hierarchical merging}: $O(M\log M)$ where $M$ is the number of candidate blocks, typically $M = \Theta(T_p\, \bar m)$ with $\bar m$ the mean number of local blocks per candidate
 \end{itemize}
 
 For our datasets with $C \sim 300$, $T \sim 100$, $F \sim 65$, and $T_p = 1000$, wall-clock time is approximately 2-4 hours on a 16-core workstation with 64GB RAM.
 
 \subsection{Statistical assessment and robustness}
 \begin{itemize}
-    \item \textbf{Permutation/shift tests}: circularly shift time mode and shuffle features within groups to estimate empirical null distributions; control FDR by Benjamini--Hochberg.
+    \item \textbf{Permutation/shift tests}: primary nulls use circular time shifts; we additionally use per-cell independent shifts (to break global trends), Fourier phase randomization for strongly autocorrelated series, and block bootstrap across features. We control FDR by Benjamini--Yekutieli across tests.
     \item \textbf{Individual consistency}: leave-one-embryo-out validation; report weighted Jaccard similarity across embryos.
     \item \textbf{Missing-data sensitivity}: inject 5--20\% extra missingness on top of the real mask and measure recovery rate and score variation.
 \end{itemize}
 
 \subsection{Implementation and reproducibility}
-Morphological/contact quantities and $\eta$ follow CMap's definitions; 3DCSQ features use the authors' public implementation (SPHARM+PCA), both static and dynamic versions are available. Our tensor is built primarily from per-frame static features; dynamic features are used in post hoc interpretation. All code is in Python/Rust with MPI-based parallelization; seeds are fixed. Preprocessing scripts, feature lists, and hyperparameters are provided in Supplementary Materials.
+Morphological/contact quantities and $\eta$ follow CMap's definitions; 3DCSQ features use the authors' public implementation (SPHARM+PCA), both static and dynamic versions are available. Our tensor is built primarily from per-frame static features; dynamic features are used in post hoc interpretation. Feature-mode dependence is assessed by HSIC/dCor with BY control unless otherwise specified. All code is in Python/Rust with MPI-based parallelization; seeds are fixed. Preprocessing scripts, feature lists, and hyperparameters are provided in Supplementary Materials.
+
+\paragraph{Unified evaluation protocol for baselines.} All baseline methods share the same splits, seeds, early stopping, and preprocessing. CP/Tucker/PARAFAC2 ranks are selected by cross-validated BIC within a grid $r\in\{3,5,7,9,11\}$ (with CORCONDIA sanity checks); NTF uses a temporal smoothness weight $\lambda_t\in\{0,10^{-3},10^{-2},10^{-1},1\}$; spectral/biclustering methods scan cluster counts $k\in\{6,8,10,12\}$ with identical regularization; all methods use the same 10-fold CV and patience~$=10$ early stopping; random seeds are shared across folds; initialization uses 5 restarts with best validation score kept. Full grids and exact settings are documented in Supplementary Table~S1.
 
 \section{Background and Related Work}
 
@@ -331,9 +342,7 @@ Traditional approaches to analyzing developmental data rely on matricization, wh
 \label{sec:celegans_validation}
 
 \subsection{Validation design and pre-registered behavioral criteria}
-\textbf{Note on label-free discovery:} All discovery (clustering and merging) uses unlabeled data. Literature windows are used solely for preregistered evaluation on held-out embryos, avoiding any label leakage into the unsupervised learning process.
-
-To evaluate whether our tensor co-clustering framework (Sec.~\ref{sec:methods}) recovers \emph{established} morphogenetic behaviors in \textit{C.~elegans}, we designed a literature-grounded validation that operationalizes two canonical processes with well-defined spatiotemporal signatures: (i) \textbf{dorsal intercalation} of hypodermal (hyp) cells (convergent extension across the dorsal midline) and (ii) \textbf{intestinal morphogenesis} of the E lineage (Ea/Ep internalization, primordium formation, tube polarization). Timings and qualitative behaviors follow the canonical lineage atlas and subsequent mechanistic work (e.g., Sulston \emph{et~al.}, Guan \emph{et~al.}, Li \emph{et~al.}). We specify a priori, for each process, the expected observables in cell--time--feature space and test whether our co-clusters match those observables.
+\textbf{Note on label-free discovery:} All discovery (clustering and merging) uses unlabeled data. Literature windows are used solely for preregistered evaluation on held-out embryos, avoiding any label leakage into the unsupervised learning process. The primary endpoints and thresholds (e.g., alignment window [225,235] min and $\theta=0.8$) were preregistered on OSF (anonymized link in Supplementary Materials; timestamped prior to analysis) based on literature ranges and simulation-based power checks.
 
 Given the standardized tensor $\mathcal{X}\in\mathbb{R}^{C\times T\times F}$ (cells $\times$ time $\times$ features), the algorithm produces a collection of tri-clusters $\{\mathcal{B}_u\}_u$, each with index sets $(\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u)$ and a blockwise low-rank approximation. We run $T_p$ randomized partitions/merges (Sec.~\ref{sec:methods}) and define a \emph{time-resolved co-clustering probability} between cells $i,j$,
 \begin{equation}
@@ -372,7 +381,7 @@ yielding $\mathrm{Align}\approx 0.9$ for both left and right cohorts. A permutat
 Spatial trajectories (Fig.~\ref{fig:di_tracks}) show bilateral cohorts migrating toward $y=0$ with a consistent increase in medial speed $v_y$ during the high $P_{ij}(t)$ epoch, followed by positional stabilization after $t\approx 240$~min. Directional persistence and the left/right alternation of end positions match the expected "finger-like interdigitation".
 
 \paragraph{Temporal coordination decay.}
-We regress $\bar{P}(t)$ on time using Theil–Sen (robust) within $[240,255]$~min and obtain $\hat{\beta}<0$ with a 95\% CI excluding zero (Fig.~\ref{fig:decline}). Blockwise circular time-shifts (null) yield $p<10^{-3}$ after FDR correction. This supports the literature-reported transition from coordinated interdigitation to post-closure stabilization.
+We regress $\bar{P}(t)$ on time using Theil–Sen (robust) within $[240,255]$~min and obtain $\hat{\beta}<0$ with a 95\% CI excluding zero (Fig.~\ref{fig:decline}). Blockwise circular time-shifts (null) yield $p<10^{-3}$ after FDR correction (BY). This supports the literature-reported transition from coordinated interdigitation to post-closure stabilization.
 
 \subsection{Recovering intestinal morphogenesis}
 \label{subsec:val_int}
@@ -384,14 +393,13 @@ We aggregate $w_f$ (Eq.~\ref{eq:feature_weight}) across tri-clusters contributin
 
 \subsection{Baseline method comparisons}
 
-To systematically evaluate DiMergeTCC against established approaches, we compare with representative tensor decomposition, matrix-based co-clustering, and temporal clustering methods on the same \textit{C.~elegans} dataset. All methods use identical preprocessing, train/validation splits, and evaluation metrics.
-
 \subsubsection{Baseline methods}
 \begin{itemize}
 \item \textbf{Tensor decomposition baselines:} CP/PARAFAC with automatic rank selection, Tucker decomposition (HOSVD), PARAFAC2 for time-axis misalignment tolerance, and Non-negative Tensor Factorization (NTF) with temporal smoothness regularization.
 \item \textbf{Matrix co-clustering baselines:} Spectral co-clustering (Dhillon et al.), Cheng-Church biclustering, PLAID overlapping biclustering, and time-continuity regularized biclustering.
 \item \textbf{Sequential clustering baselines:} Time-slice clustering followed by temporal merging, and Dynamic Mode Decomposition (DMD) with clustering of temporal modes.
 \end{itemize}
+All baselines follow the unified evaluation protocol described in Methods.
 
 \subsubsection{Evaluation metrics}
 For each method, we measure:
@@ -403,13 +411,13 @@ For each method, we measure:
 \end{itemize}
 
 \subsubsection{Comparative results}
-\textbf{Temporal alignment performance:} DiMergeTCC achieves significantly higher alignment scores compared to all baselines (Table~\ref{tab:baseline_comparison}). For dorsal intercalation, mean alignment score is 0.87 ± 0.05 vs. 0.62 ± 0.08 (Tucker), 0.58 ± 0.12 (CP), and 0.51 ± 0.15 (Dhillon spectral); effect sizes (Cohen's $d$) range from 2.1-3.8 (all $p < 0.001$, paired bootstrap test with Bonferroni correction). For intestinal morphogenesis, DiMergeTCC achieves 0.83 ± 0.06 vs. 0.59 ± 0.11 (best baseline: PARAFAC2).
+\textbf{Temporal alignment performance:} DiMergeTCC achieves significantly higher alignment scores compared to all baselines (Table~\ref{tab:baseline_comparison}). For dorsal intercalation, mean alignment score is 0.87 ± 0.05 vs. 0.62 ± 0.08 (Tucker), 0.58 ± 0.12 (CP), and 0.51 ± 0.15 (Dhillon spectral); effect sizes (Cohen's $d$) range from 2.1-3.8 (all $p < 0.001$, BY-adjusted permutation tests). For intestinal morphogenesis, DiMergeTCC achieves 0.83 ± 0.06 vs. 0.59 ± 0.11 (best baseline: PARAFAC2).
 
 \textbf{Velocity pattern recovery:} DiMergeTCC shows superior correlation with expected velocity patterns: $r = 0.89$ ± 0.04 for dorsal $v_y$ patterns vs. 0.67 ± 0.12 (Cheng-Church) and 0.61 ± 0.18 (Tucker). For intestinal $v_z$ patterns, DiMergeTCC achieves $r = 0.86$ ± 0.05 vs. 0.64 ± 0.13 (PARAFAC2).
 
 \textbf{Feature attribution consistency:} Rank correlation of feature weights across cross-validation folds: DiMergeTCC = 0.91 ± 0.03, Tucker = 0.74 ± 0.08, CP = 0.69 ± 0.12, matrix methods = 0.52-0.67 range.
 
-\textbf{Statistical significance:} All pairwise comparisons between DiMergeTCC and baselines achieve $p < 0.001$ (two-sided permutation tests, 10,000 iterations). Effect sizes are large (Cohen's $d > 0.8$) for all metrics, indicating practical significance beyond statistical significance.
+\textbf{Statistical significance:} All pairwise comparisons between DiMergeTCC and baselines achieve $p < 0.001$ (two-sided permutation tests, 10,000 iterations) with BY control across methods and metrics. Effect sizes are large (Cohen's $d > 0.8$) for all metrics, indicating practical significance beyond statistical significance.
 
 \begin{table}[t]
 \centering
@@ -431,7 +439,7 @@ PLAID & 0.46 ± 0.16** & 0.49 ± 0.15** & 0.61 ± 0.16** & 0.57 ± 0.12** \\
 \end{tabular}
 \begin{tablenotes}
 Values are mean ± standard deviation across 10-fold cross-validation. 
-** $p < 0.001$ vs. DiMergeTCC (permutation test, Bonferroni corrected).
+** BY-adjusted $p < 0.001$ vs. DiMergeTCC (two-sided permutation tests; family-wise adjustment across methods and metrics).
 \end{tablenotes}
 \end{table}
 
@@ -444,6 +452,8 @@ Values are mean ± standard deviation across 10-fold cross-validation.
 
 \item \textbf{No hierarchical merging:} Using only local tri-clustering without merging produces fragmented $P_{ij}(t)$ patterns and over-segmentation (mean cluster count: 47 vs. 12 with merging). Alignment scores drop by 28\% (95\% CI: [22\%, 35\%]), demonstrating the importance of global integration.
 
+\item \textbf{Stricter merge rule (ours) vs. product-only Jaccard):} Requiring per-mode thresholds $(\alpha_I,\alpha_J,\alpha_K)$ \emph{and} non-decreasing composite score within a bootstrap CI reduces over-merging and improves alignment by 6--9\% compared to using only the product $J_3$ (all BY-adjusted $p<0.01$).
+
 \item \textbf{No probabilistic candidate generation:} Deterministic grid-based partitioning reduces alignment scores by 18-23\% across both morphogenetic processes ($p < 0.001$), validating the theoretical motivation for preservation probability guarantees.
 \end{enumerate}
 
@@ -452,7 +462,7 @@ We systematically vary temporal window sizes beyond the default \{16, 32, 64\} f
 \begin{itemize}
 \item \textbf{Ultra-short windows (8 frames):} Capture micro-coordination events but increase noise; alignment scores drop 15\% due to temporal fragmentation.
 \item \textbf{Extended windows (128 frames):} Provide temporal stability but miss short-duration events; alignment scores decrease 12\% as fine-grained dynamics are averaged out.
-\item \textbf{Optimal range:} 16-64 frame windows show peak performance, with 32-frame windows optimal for dorsal intercalation (duration ~30 min) and 64-frame windows optimal for intestinal morphogenesis (duration ~50 min).
+\item \textbf{Optimal range:} 16-64 frame windows show peak performance, with 32-frame windows optimal for dorsal intercalation (duration ~30 min) and 64-frame windows optimal for intestinal morphogenesis (duration ~50 min). A brief efficiency curve is provided in Supplementary Fig.~S3.
 \end{itemize}
 
 \subsubsection{Preprocessing and normalization sensitivity}
@@ -492,7 +502,7 @@ Contact/topology features & -0.06 ± 0.02* & -0.04 ± 0.02 \\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}
-* $p < 0.05$, ** $p < 0.001$ vs. full model (paired t-test, Bonferroni corrected).
+* $p < 0.05$, ** $p < 0.001$ vs. full model (BY-adjusted).
 \end{tablenotes}
 \end{table}
 
@@ -515,12 +525,12 @@ To validate detection sensitivity, we inject synthetic tri-blocks with known gro
 
 \subsubsection{Statistical null distributions and multiple testing}
 \begin{itemize}
-\item \textbf{Permutation strategy:} 10,000 circular time shifts per embryo preserve temporal autocorrelation structure while breaking biological coordination.
-\item \textbf{FDR control:} Benjamini-Yekutieli procedure controls false discovery rate at $\leq 5\%$ across 180 statistical tests (45 tri-clusters × 4 validation metrics). We report adjusted q-values for all tested tri-clusters and metrics.
+\item \textbf{Permutation strategy:} 10,000 circular time shifts per embryo preserve temporal autocorrelation structure while breaking biological coordination; we also apply per-cell independent shifts and Fourier phase randomization for conservative nulls when needed.
+\item \textbf{FDR control:} Benjamini--Yekutieli procedure controls false discovery rate at $\leq 5\%$ across 180 statistical tests (45 tri-clusters × 4 validation metrics). We report BY-adjusted $q$-values (Storey's estimator used only for exploratory summaries; confirmatory claims rely on BY-adjusted $p$-values).
 \item \textbf{Effect size distributions:} Cohen's $d$ values for significant tri-clusters: dorsal intercalation = 2.1 ± 0.4, intestinal morphogenesis = 1.8 ± 0.3 (both large effect sizes).
 \end{itemize}
 
-All ablations demonstrate that DiMergeTCC's performance depends on the integrated combination of tensor structure, probabilistic candidate generation, hierarchical merging, and appropriate preprocessing. No single component dominates, but kinematic features and temporal window selection are most critical for biological pattern recovery.
+All ablations demonstrate that DiMergeTCC's performance depends on the integrated combination of tensor structure, probabilistic candidate generation, hierarchical merging with per-mode safeguards, and appropriate preprocessing. No single component dominates, but kinematic features and temporal window selection are most critical for biological pattern recovery.
 
 \subsection{Conclusion}
 Our tensor co-clustering framework recovers the hallmark spatiotemporal coordination of \emph{dorsal intercalation} and the kinematic/shape signatures of \emph{intestinal morphogenesis}, with quantitative alignment to the known developmental schedule and mechanisms. The agreement spans probability dynamics, trajectories, velocity fields, and feature attributions, and is robust to ablations and null tests. These results provide strong evidence that the method captures genuine biological programs rather than artifacts of partitioning or feature selection.
@@ -578,8 +588,8 @@ Our tensor co-clustering framework recovers the hallmark spatiotemporal coordina
 
 Our results indicate that tensor co-clustering can recover established behaviors in
 \textit{C.~elegans}.  The next stage is to use the same framework, with stronger controls,
-to discover \emph{previously unreported} patterns both in nematode embryogenesis and in
-other systems.  Below we outline a cautious, extensible agenda.
+ to discover \emph{previously unreported} patterns both in nematode embryogenesis and in
+ other systems.  Below we outline a cautious, extensible agenda.
 
 \subsection{Guiding principles and discovery protocol}
 We adopt a three-phase loop: (i) \emph{unsupervised discovery} under strict regularization,
@@ -620,7 +630,7 @@ disruption, but not under microtubule attenuation.
 \paragraph{(B) Leader–follower switches.}
 Identify tri-clusters where the ordering of peak speed or elongation between two or more
 cells reverses within a single interdigitation event.  Quantify with a Kendall-$\tau$
-time-course computed within $\mathcal{J}_u$.  A robust pattern must (i) recur across
+ time-course computed within $\mathcal{J}_u$.  A robust pattern must (i) recur across
 embryos, (ii) survive time-warp alignment (DTW) to a dorsal-closure clock, and
 (iii) show lineage symmetry (left/right analogs).
 
@@ -644,7 +654,7 @@ The tensor design is agnostic to species; only feature dictionaries and alignmen
 Construct $\mathcal{X}$ from cell patches during ventral furrow formation; features include
 apical area, anisotropy, myosin reporter intensity, and tissue flow invariants
 (divergence, shear).  Hypothesis: DiMergeCo will isolate medio-lateral \emph{shear bands}
-and apical constriction \emph{phase fronts}.  Validate against optogenetic perturbations.
+ and apical constriction \emph{phase fronts}.  Validate against optogenetic perturbations.
 
 \paragraph{(F) Zebrafish epiboly and convergence/extension.}
 Use nuclei tracking to form cell--time--(velocity/neighbor) tensors.  Search for tri-clusters
@@ -655,7 +665,7 @@ Confirm with PCP mutants as negative controls.
 Apply a multi-embryo atlas with optimal-transport alignment to a common morphospace; add
 signaling reporters (e.g., Wnt, Nodal) as an auxiliary feature mode.  Look for
 tri-clusters that link morphodynamic states to signaling pulses; test directionality by
-time-lagged Granger-style regressions with block bootstraps.
+ time-lagged Granger-style regressions with block bootstraps.
 
 \paragraph{(H) Organoids and in~vitro epithelia.}
 In intestinal and brain organoids, combine 3D shape descriptors (sphericity, curvature,
@@ -676,7 +686,7 @@ To safely expand discovery, we plan the following technical additions.
 \paragraph{(M1) Bayesian and uncertainty-aware co-clustering.}
 Introduce a posterior over blocks with sparsity and contiguity priors across $T$.
 Report for each cell--time pair a marginal inclusion probability $\pi_{it}$ and adopt
-a calibrated threshold (e.g., controlling the Bayesian FDR).  Use Rao–Blackwellized
+ a calibrated threshold (e.g., controlling the Bayesian FDR).  Use Rao–Blackwellized
 averages to stabilize feature weights $w_f$.
 
 \paragraph{(M2) Physics-informed and topology-aware features.}
@@ -719,7 +729,7 @@ We will standardize:
   \item \textbf{Power analysis:} simulate planted tri-clusters with measured noise to
   estimate detectable effect sizes under desired FDR.
   \item \textbf{Uncertainty reports:} for each published motif, provide stability paths,
-  inclusion maps, pre-registered hypotheses, and complete code to reconstruct results.
+  inclusion maps, pre-registered hypotheses (OSF link), and complete code to reconstruct results.
 \end{itemize}
 
 \subsection{Risks and limitations}
@@ -739,7 +749,7 @@ cross-embryo alignment, and explicit uncertainty is intended to maximize the cha
 
 % ------------------------ DISCUSSION ------------------------
 \section{Discussion}\label{sec:discussion}
-DiMergeTCC discovers contiguous, multi-way coordination without prior labels, bridging matrix co-clustering and tensor decompositions. Blocks align with well-documented dorsal intercalation and E-lineage morphogenesis, while revealing post-event coordination decay. Extensions include higher-order tensors (adding embryos/perturbations), block-overlap priors, and causal tests across genotypes.
+DiMergeTCC discovers contiguous, multi-way coordination without prior labels, bridging matrix co-clustering and tensor decompositions. Blocks align with well-documented dorsal intercalation and E-lineage morphogenesis, while revealing post-event coordination decay. Extensions include higher-order tensors (adding embryos/perturbations), block-overlap priors with per-mode safeguards, and causal tests across genotypes.
 
 % ------------------------ LIMITATIONS ------------------------
 \section{Limitations}\label{sec:limits}
@@ -748,14 +758,14 @@ Current scoring assumes sub-Gaussian noise and relies on time-contiguity. Extrem
 % ------------------------ AVAILABILITY/REPRO ------------------------
 \section{Data and Code Availability}\label{sec:availability}
 
-\textbf{Code and Reproducibility:} Complete source code, Docker containers, and Snakemake workflows are available at \url{https://zenodo.org/record/anonymous-12345} (DOI: 10.5281/zenodo.anonymous-12345). The repository includes:
+\textbf{Code and Reproducibility:} Complete source code, Docker containers, and Snakemake workflows are available at an anonymized repository (link redacted for review; to be replaced with a DOI upon acceptance). The repository includes:
 \begin{itemize}
     \item Full DiMergeTCC implementation in Python/Rust with MPI parallelization
     \item Docker and Singularity containers with all dependencies pre-installed
     \item Complete Snakemake workflow (\texttt{snakemake --cores 16 all}) to reproduce all figures and analyses
     \item Configuration files (\texttt{config.yaml}) with exact hyperparameters and random seeds
     \item Preprocessing scripts for CMap data integration and feature extraction
-    \item Statistical analysis scripts with permutation tests and FDR control
+    \item Statistical analysis scripts with permutation tests and BY control
     \item SHA-256 checksums for all intermediate and final outputs
 \end{itemize}
 
