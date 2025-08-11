@@ -90,8 +90,8 @@
 
 \abstract{
 \textbf{Motivation:} The embryonic development of the nematode \textit{Caenorhabditis elegans} is captured by modern 4D microscopy, yielding rich spatio-temporal datasets. Automatically discovering groups of cells that behave coordinately over particular time windows remains challenging when matrix-based representations disrupt higher-order relationships.\\
-\textbf{Results:} We introduce DiMergeTCC, a tensor co-clustering framework that extends Distributed Merge Co-clustering from matrices to three-mode tensors (cells $\times$ time $\times$ features). The method combines randomized candidate generation with probabilistic preservation guarantees, parallel local three-way clustering, hierarchical merging via three-mode Jaccard similarity with per-mode thresholds, and FDR-controlled statistical testing (Benjamini--Yekutieli). We provide conservative, dependence-aware bounds on the failure probability for reconstructing true tri-blocks after $T_p$ candidate generations, enabling principled parameter selection. Applied to \textit{C.~elegans} embryogenesis without event labels, DiMergeTCC automatically recovered dorsal intercalation and intestinal primordium organization. Quantitative validation shows 22–34\% improvement in literature time window alignment over tensor/matrix baselines at matched FDR, with velocity and shape attributions remaining stable under 10–20\% additional missingness.\\
-\textbf{Availability:} Code and containers: \href{https://zenodo.org/record/anonymous-12345}{link redacted for review; to be released upon acceptance}. Complete Snakemake workflow reproduces all figures.\\
+\textbf{Results:} We introduce DiMergeTCC, a tensor co-clustering framework that extends Distributed Merge Co-clustering from matrices to three-mode tensors (cells $\times$ time $\times$ features). The method combines randomized candidate generation with probabilistic preservation guarantees, parallel local three-way clustering, hierarchical merging via three-mode Jaccard similarity with per-mode thresholds, and FDR-controlled statistical testing (Benjamini--Yekutieli). We provide conservative, dependence-aware bounds on the failure probability for reconstructing true tri-blocks after $T_p$ candidate generations, enabling principled parameter selection. Applied to \textit{C.~elegans} embryogenesis without event labels, DiMergeTCC automatically recovered dorsal intercalation and intestinal primordium organization. Quantitative validation shows 22--34\% improvement in literature time window alignment over tensor/matrix baselines at matched FDR, with velocity and shape attributions remaining stable under 10--20\% additional missingness.\\
+\textbf{Availability:} Data will be made publicly available upon publication. Code and containers are available from the corresponding author upon reasonable request for non-commercial research purposes.\\
 \textbf{Contact:} \href{mailto:wzh4464@gmail.com}{wzh4464@gmail.com}
 }
 
@@ -167,11 +167,14 @@ To obtain compact and comparable shape descriptors, we follow the \textbf{3DCSQ}
 These features preserve local detail while enabling reconstruction; we distinguish \textbf{static} features $f_{\text{static}}$ (per-frame) and \textbf{dynamic} features $f_{\text{dynamic}}$ (average over a cell's lifetime).  
 For interpretability, we retain components in descending order of explained variance until a target reconstruction error is met.
 
+\subsubsection{Spatial coordinates and kinematics}
+For each cell at each time point, we compute 3D coordinates $(x,y,z)$ in the embryo frame; instantaneous velocity $\mathbf v=(v_x,v_y,v_z)$ and acceleration $\mathbf a=(a_x,a_y,a_z)$ via first- and second-order finite differences at 1.5~min resolution; speed $\|\mathbf v\|$ and acceleration magnitude $\|\mathbf a\|$; and motion direction represented by the unit vector $\hat{\mathbf v}$ and by azimuth $\phi$ and elevation $\psi$. All quantities are standardized and included in the feature tensor.
+
 \subsubsection{Temporal and lineage alignment}
 We align each embryo's timeline so that the end of the 4-cell stage is $t=0$ (corresponding to approximately 150-160 minutes post-fertilization). All time references throughout this paper are relative to this $t=0$ reference point unless explicitly noted otherwise. All datasets are resampled to a common frame rate (1.5~min) by linear interpolation; lineage mappings follow CMap's identity files. Missing frames are filled by nearest-neighbor interpolation and masked to avoid artificial correlations in co-clustering.
 
 \subsubsection{Coordinate system convention}
-We adopt a standard embryonic coordinate system: $x$-axis represents anterior-posterior (AP) direction, $y$-axis represents left-right (LR) direction, and $z$-axis represents dorsal-ventral (DV) direction, aligned with the imaging axis. Negative $v_z$ velocities correspond to inward/ventral movement (toward the imaging objective), while positive $v_z$ corresponds to outward/dorsal movement. This convention is used consistently throughout velocity field analyses and directional measurements; a schematic is provided in Supplementary Fig.~S1.
+We adopt a standard embryonic coordinate system: $x$-axis represents anterior-posterior (AP) direction, $y$-axis represents left-right (LR) direction, and $z$-axis represents dorsal-ventral (DV) direction, aligned with the imaging axis. Negative $v_z$ velocities correspond to inward/ventral movement (toward the imaging objective), while positive $v_z$ corresponds to outward/dorsal movement. This convention is used consistently throughout velocity field analyses and directional measurements; a schematic is provided in Supplementary Fig.~S1. All kinematic features are computed in this coordinate system using first- and second-order finite differences at a 1.5~min sampling interval.
 
 \subsection{Feature dictionary}
 Table~\ref{tab:feature-dict} lists the complete feature set used for tensor construction. Morphological derivatives ($\Delta$) are computed as frame-to-frame differences.
@@ -189,6 +192,12 @@ Morphology & $V$ & Volume (voxel count $\times$ voxel size) \\
  & $A_C$ & Total membrane-membrane contact area with neighbors \\
  & $\eta$ & Irregularity index: $\sqrt{A_S}/\sqrt[4]{V^3}$ \\
  & $\Delta V$, $\Delta A_S$, $\Delta A_C$ & Temporal derivatives of $V$, $A_S$, $A_C$ \\
+\midrule
+Kinematics & $x,y,z$ & 3D coordinates in embryo frame (AP, LR, DV) \\
+ & $v_x,v_y,v_z$ & Instantaneous velocity components (finite differences, 1.5~min) \\
+ & $a_x,a_y,a_z$ & Instantaneous acceleration components (second-order differences) \\
+ & $\|\mathbf v\|,\|\mathbf a\|$ & Speed and acceleration magnitudes \\
+ & $\hat{\mathbf v},\phi,\psi$ & Unit direction vector and spherical angles (azimuth, elevation) \\
 \midrule
 3DCSQ (static) & eigengrid$_{1\ldots K_g}$ & PC scores from spherical mesh vertex positions \\
  & eigenharmonic$_{1\ldots K_h}$ & PC scores from spherical harmonic coefficients \\
@@ -209,7 +218,7 @@ For each cell $c = 1,\dots,C$ and time $t = 1,\dots,T$, we concatenate all stand
 \mathcal{X} \in \mathbb{R}^{C \times T \times F}, \quad \mathcal{X}(c,t,f) = z_{c,t}^{(f)}.
 \label{eq:tensor-def}
 \end{equation}
-The feature set includes the morphological, 3DCSQ static, and 3DCSQ dynamic features described above.
+The feature set includes the morphological, kinematic, 3DCSQ static, and 3DCSQ dynamic features described above.
 
 \subsection{Tensor Co-Clustering (TCC): Extending DiMergeCo to three modes}
 
@@ -351,7 +360,7 @@ Traditional approaches to analyzing developmental data rely on matricization, wh
 \label{sec:celegans_validation}
 
 \subsection{Validation design and pre-registered behavioral criteria}
-\textbf{Note on label-free discovery:} All discovery (clustering and merging) uses unlabeled data. Literature windows are used solely for preregistered evaluation on held-out embryos, avoiding any label leakage into the unsupervised learning process. The primary endpoints and thresholds (e.g., alignment window [225,235] min and $\theta=0.8$) were preregistered on OSF (anonymized link in Supplementary Materials; timestamped prior to analysis) based on literature ranges and simulation-based power checks.
+Note on label-free discovery: All discovery (clustering and merging) uses unlabeled data. Literature windows are used solely for preregistered evaluation on held-out embryos, avoiding any label leakage into the unsupervised learning process. The primary endpoints and thresholds (e.g., alignment window [225,235] min and $\theta=0.8$) were preregistered on OSF (anonymized link in Supplementary Materials; timestamped prior to analysis) based on literature ranges and simulation-based power checks.
 
 Given the standardized tensor $\mathcal{X}\in\mathbb{R}^{C\times T\times F}$ (cells $\times$ time $\times$ features), the algorithm produces a collection of tri-clusters $\{\mathcal{B}_u\}_u$, each with index sets $(\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u)$ and a blockwise low-rank approximation. We run $T_p$ randomized partitions/merges (Sec.~\ref{sec:methods}) and define a \emph{time-resolved co-clustering probability} between cells $i,j$,
 \begin{equation}
@@ -398,7 +407,7 @@ For E-lineage cells and $t\in[350,400]$~min, tri-clusters capture internalizatio
 
 \subsection{Feature-level concordance with mechanism}
 \label{subsec:val_features}
-We aggregate $w_f$ (Eq.~\ref{eq:feature_weight}) across tri-clusters contributing to each process. During dorsal intercalation, \emph{Y-axis velocity}, \emph{cell elongation}, and \emph{surface curvature} account for the largest shares (Fig.~\ref{fig:features}A), matching a mechanics where medial convergence and wedge-like deformation dominate. During intestinal morphogenesis, \emph{negative $v_z$}, \emph{apical surface area}, and \emph{volume change} are most informative (Fig.~\ref{fig:features}B), consistent with apical constriction, internalization, and apical domain remodeling. These attributions are reproduced when recomputing weights with leave-one-embryo-out and remain stable under 10–20\% missingness augmentation.
+We aggregate $w_f$ (Eq.~\ref{eq:feature_weight}) across tri-clusters contributing to each process. During dorsal intercalation, Y-axis velocity, cell elongation, and surface curvature account for the largest shares (Fig.~\ref{fig:features}A), matching a mechanics where medial convergence and wedge-like deformation dominate. During intestinal morphogenesis, negative $v_z$, apical surface area, and volume change are most informative (Fig.~\ref{fig:features}B), consistent with apical constriction, internalization, and apical domain remodeling. These attributions are reproduced when recomputing weights with leave-one-embryo-out and remain stable under 10–20\% missingness augmentation.
 
 \subsection{Baseline method comparisons}
 
@@ -428,7 +437,7 @@ For each method, we measure:
 
 \textbf{Statistical significance:} All pairwise comparisons between DiMergeTCC and baselines achieve $p < 0.001$ (two-sided permutation tests, 10,000 iterations) with BY control across methods and metrics. Effect sizes are large (Cohen's $d > 0.8$) for all metrics, indicating practical significance beyond statistical significance.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \caption{Baseline method comparison results.}
 \label{tab:baseline_comparison}
@@ -450,7 +459,7 @@ PLAID & 0.46 ± 0.16** & 0.49 ± 0.15** & 0.61 ± 0.16** & 0.57 ± 0.12** \\
 Values are mean ± standard deviation across 10-fold cross-validation. 
 ** BY-adjusted $p < 0.001$ vs. DiMergeTCC (two-sided permutation tests; family-wise adjustment across methods and metrics).
 \end{tablenotes}
-\end{table}
+\end{table*}
 
 \subsection{Comprehensive ablation studies and robustness analysis}
 \label{subsec:val_robust}
@@ -495,7 +504,7 @@ We systematically vary temporal window sizes beyond the default \{16, 32, 64\} f
 
 \subsubsection{Feature group masking experiments}
 We systematically mask entire feature categories to assess their contribution:
-\begin{table}[h]
+\begin{table*}[h]
 \centering
 \caption{Feature group ablation results ($\Delta$ alignment score).}
 \label{tab:feature_ablation}
@@ -513,7 +522,7 @@ Contact/topology features & -0.06 ± 0.02* & -0.04 ± 0.02 \\
 \begin{tablenotes}
 * $p < 0.05$, ** $p < 0.001$ vs. full model (BY-adjusted).
 \end{tablenotes}
-\end{table}
+\end{table*}
 
 \textbf{Key insights:} Kinematic features show the largest impact for both processes, confirming that velocity patterns are primary discriminators. Morphological features are more critical for intestinal morphogenesis (volume/shape changes), while 3DCSQ features contribute more to dorsal intercalation (surface deformation patterns).
 
