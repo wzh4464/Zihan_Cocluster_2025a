@@ -90,7 +90,7 @@
 \abstract{
 \textbf{Motivation:} The embryonic development of the nematode \textit{Caenorhabditis elegans} is captured by modern 4D microscopy, yielding rich spatio-temporal datasets. Automatically discovering groups of cells that behave coordinately over particular time windows remains challenging when matrix-based representations disrupt higher-order relationships.\\
 \textbf{Results:} We introduce DiMergeTCC, a tensor co-clustering framework that extends Distributed Merge Co-clustering from matrices to three-mode tensors (cells $\times$ time $\times$ features). The method combines randomized candidate generation with probabilistic preservation guarantees, parallel local three-way clustering, hierarchical merging via three-mode Jaccard similarity with per-mode thresholds, and FDR-controlled statistical testing (Benjamini--Yekutieli). We provide conservative, dependence-aware bounds on the failure probability for reconstructing true tri-blocks after $T_p$ candidate generations, enabling principled parameter selection. Applied to \textit{C.~elegans} embryogenesis without event labels, DiMergeTCC automatically recovered dorsal intercalation and intestinal primordium organization. Quantitative validation shows 22--34\% improvement in literature time window alignment over tensor/matrix baselines at matched FDR, with velocity and shape attributions remaining stable under 10--20\% additional missingness.\\
-\textbf{Availability:} Data will be made publicly available upon publication. Code and containers are available from the corresponding author upon reasonable request for non-commercial research purposes.\\
+\textbf{Availability:} Code and reproducible workflows are available at an anonymized repository (link in Supplementary; to be made public upon publication). Processed data and analysis artifacts are included; raw imaging data are available via the CMap consortium under their data usage agreement.\\
 \textbf{Contact:} \href{mailto:wzh4464@gmail.com}{wzh4464@gmail.com}
 }
 
@@ -149,12 +149,12 @@ From each 3D segmented cell, we compute:
     \item Surface area $A_S$: alpha-shape triangulation of the membrane surface.
     \item Contact area $A_C$: total area of membrane--membrane interfaces with neighbors.
 \end{itemize}
-We further define a \textbf{dimensionless irregularity index}
+We adopt the \textbf{dimensionless sphericity (isoperimetric quotient)}
 \begin{equation}
-\eta = \frac{\sqrt{A_S}}{\sqrt[4]{V^3}}
-\label{eq:irregularity-index}
+\Psi \;=\; \frac{\pi^{1/3}\,(6V)^{2/3}}{A_S}
+\label{eq:sphericity}
 \end{equation}
-which measures deviation from a sphere and captures deformation intensity during migration/intercalation.
+which equals 1 for a perfect sphere and decreases with deformation; it serves as a physically meaningful, unitless proxy for shape irregularity during migration/intercalation.
 
 \subsubsection{3DCSQ shape spectral features}
 To obtain compact and comparable shape descriptors, we follow the \textbf{3DCSQ} approach: each membrane surface is parameterized to the sphere and expanded in spherical harmonics, followed by PCA to extract three types of vectors:
@@ -163,8 +163,7 @@ To obtain compact and comparable shape descriptors, we follow the \textbf{3DCSQ}
     \item \textit{eigenharmonic}$_k$: principal components of spherical harmonic coefficients.
     \item \textit{eigenspectrum}$_\ell$: power spectrum coefficients of the harmonics.
 \end{enumerate}
-These features preserve local detail while enabling reconstruction; we distinguish \textbf{static} features $f_{\text{static}}$ (per-frame) and \textbf{dynamic} features $f_{\text{dynamic}}$ (average over a cell's lifetime).  
-For interpretability, we retain components in descending order of explained variance until a target reconstruction error is met.
+These features preserve local detail while enabling reconstruction; we distinguish \textbf{static} features $f_{\text{static}}$ (per-frame) and \textbf{lifetime-aggregated} features $f_{\text{agg}}$ (per-cell summaries over the full tracked lifetime).  In addition, to capture temporal dynamics explicitly, we compute for selected features per-cell \emph{linear trend (slope)}, \emph{total variation}, and \emph{band-limited power} (via periodogram with 0.01--0.1 Hz equivalent bands at 1.5~min sampling); these dynamic summaries are standardized and included in the feature tensor.
 
 \subsubsection{Spatial coordinates and kinematics}
 For each cell at each time point, we compute 3D coordinates $(x,y,z)$ in the embryo frame; instantaneous velocity $\mathbf v=(v_x,v_y,v_z)$ and acceleration $\mathbf a=(a_x,a_y,a_z)$ via first- and second-order finite differences at 1.5~min resolution; speed $\|\mathbf v\|$ and acceleration magnitude $\|\mathbf a\|$; and motion direction represented by the unit vector $\hat{\mathbf v}$ and by azimuth $\phi$ and elevation $\psi$. All quantities are standardized and included in the feature tensor.
@@ -173,7 +172,7 @@ For each cell at each time point, we compute 3D coordinates $(x,y,z)$ in the emb
 We align each embryo's timeline so that the end of the 4-cell stage is $t=0$ (corresponding to approximately 150-160 minutes post-fertilization). All time references throughout this paper are relative to this $t=0$ reference point unless explicitly noted otherwise. All datasets are resampled to a common frame rate (1.5~min) by linear interpolation; lineage mappings follow CMap's identity files. Missing frames are filled by nearest-neighbor interpolation and masked to avoid artificial correlations in co-clustering.
 
 \subsubsection{Coordinate system convention}
-We adopt a standard embryonic coordinate system: $x$-axis represents anterior-posterior (AP) direction, $y$-axis represents left-right (LR) direction, and $z$-axis represents dorsal-ventral (DV) direction, aligned with the imaging axis. Negative $v_z$ velocities correspond to inward/ventral movement (toward the imaging objective), while positive $v_z$ corresponds to outward/dorsal movement. This convention is used consistently throughout velocity field analyses and directional measurements; a schematic is provided in Supplementary Fig.~S1. All kinematic features are computed in this coordinate system using first- and second-order finite differences at a 1.5~min sampling interval.
+We adopt a standardized embryonic coordinate system based on intrinsic biological axes: $x$ = anterior--posterior (AP), $y$ = left--right (LR), and $z$ = dorsal--ventral (DV). For each embryo, we align coordinates to this canonical frame using landmark-based rigid alignment (Procrustes): AP is estimated from anterior/posterior landmark centroids, LR from left/right hypodermal cohorts, and DV from the dorsal hypodermal centroid relative to the embryo centroid; velocities and positions are then transformed into this canonical frame. Negative $v_z$ denotes ventral/inward movement along the DV axis in this standardized frame. A schematic is provided in Supplementary Fig.~S1. All kinematic features are computed with first- and second-order finite differences at a 1.5~min sampling interval in this canonical coordinate system.
 
 \subsection{Feature dictionary}
 Table~\ref{tab:feature-dict} lists the complete feature set used for tensor construction. Morphological derivatives ($\Delta$) are computed as frame-to-frame differences.
@@ -189,7 +188,7 @@ Table~\ref{tab:feature-dict} lists the complete feature set used for tensor cons
 Morphology & $V$ & Volume (voxel count $\times$ voxel size) \\
  & $A_S$ & Surface area from alpha-shape triangulation \\
  & $A_C$ & Total membrane-membrane contact area with neighbors \\
- & $\eta$ & Irregularity index: $\sqrt{A_S}/\sqrt[4]{V^3}$ \\
+ & $\Psi$ & Sphericity (isoperimetric quotient): $\pi^{1/3}(6V)^{2/3}/A_S$ \\
  & $\Delta V$, $\Delta A_S$, $\Delta A_C$ & Temporal derivatives of $V$, $A_S$, $A_C$ \\
 \midrule
 Kinematics & $x,y,z$ & 3D coordinates in embryo frame (AP, LR, DV) \\
@@ -202,25 +201,25 @@ Kinematics & $x,y,z$ & 3D coordinates in embryo frame (AP, LR, DV) \\
  & eigenharmonic$_{1\ldots K_h}$ & PC scores from spherical harmonic coefficients \\
  & eigenspectrum$_{0\ldots L_s}$ & Power spectrum coefficients of spherical harmonics \\
 \midrule
-3DCSQ (dynamic) & dyn\_eigengrid$_{1\ldots K_g}$ & Lifetime-averaged eigengrid components \\
- & dyn\_eigenharmonic$_{1\ldots K_h}$ & Lifetime-averaged eigenharmonic components \\
- & dyn\_eigenspectrum$_{0\ldots L_s}$ & Lifetime-averaged eigenspectrum coefficients \\
+3DCSQ (lifetime-aggregated) & agg\_eigengrid$_{1\ldots K_g}$ & Lifetime-aggregated eigengrid components (per-cell summaries) \\
+ & agg\_eigenharmonic$_{1\ldots K_h}$ & Lifetime-aggregated eigenharmonic components \\
+ & agg\_eigenspectrum$_{0\ldots L_s}$ & Lifetime-aggregated eigenspectrum coefficients \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
 In practice, we set $K_g = 15$, $K_h = 15$, and $L_s = 20$ based on variance explained ($\geq 95\%$) and reconstruction error $< 5\%$.
-
+ 
 \subsection{Tensor construction}
 For each cell $c = 1,\dots,C$ and time $t = 1,\dots,T$, we concatenate all standardized features (z-score using discovery set parameters, frozen on validation embryos) to form $\mathbf{z}_{c,t} \in \mathbb{R}^F$. Stacking over cells and time yields a third-order tensor:
 \begin{equation}
 \mathcal{X} \in \mathbb{R}^{C \times T \times F}, \quad \mathcal{X}(c,t,f) = z_{c,t}^{(f)}.
 \label{eq:tensor-def}
 \end{equation}
-The feature set includes the morphological, kinematic, 3DCSQ static, and 3DCSQ dynamic features described above.
-
+The feature set includes morphological, kinematic, 3DCSQ static, lifetime-aggregated, and dynamic summary features described above.
+ 
 \subsection{Tensor Co-Clustering (TCC): Extending DiMergeCo to three modes}
-
+ 
 \subsubsection{Objective and model}
 We extend the \textbf{Distributed Merge Co-clustering} (DiMergeCo) framework from matrices to tensors to jointly discover \textbf{cell subsets $\times$ time windows $\times$ feature subsets}. We adopt a tensor block model: within each block $(\mathcal{I}_u,\mathcal{J}_u,\mathcal{K}_u)$, the entries are well-approximated by a low-rank or block-constant structure:
 \begin{equation}
@@ -232,9 +231,9 @@ subject to $\hat{\mathcal{X}}_u$ being low-rank/block-constant.
 \subsubsection{Probabilistic partitioning in three modes}
 Following DiMergeCo's "probability of preservation" principle, we stochastically generate:
 \begin{itemize}
-    \item \textbf{Cell-mode candidates}: weighted by lineage/space proximity and activity ($\eta$, derivatives), to avoid splitting correlated cells.
+    \item \textbf{Cell-mode candidates}: weighted by lineage/space proximity and activity ($\Psi$, derivatives), to avoid splitting correlated cells.
     \item \textbf{Time-mode candidates}: multi-scale sliding windows ($16$, $32$, $64$ frames) to capture both short cell-cycle changes and longer organogenesis events.
-    \item \textbf{Feature-mode candidates}: initialized by dependence tests using HSIC or distance correlation with BY-controlled significance, with collinear components sparsified.
+    \item \textbf{Feature-mode candidates}: initialized by dependence measures (HSIC or distance correlation) thresholded via a held-out split or fixed, pre-specified thresholds; collinear components are sparsified.
 \end{itemize}
 By repeating the partitioning $T_p$ times, true blocks of size above a minimum threshold are likely ($\geq 1-\delta$) to appear intact in at least one candidate, reducing fragmentation risk.
 
@@ -259,6 +258,8 @@ We additionally require per-mode overlaps $J_I,J_J,J_K$ to exceed thresholds $\a
 
 The thresholds $\alpha_I,\alpha_J,\alpha_K$ are set to balance sensitivity and specificity of merging. In practice, we choose them empirically by cross-validation on discovery embryos to optimize downstream validation metrics (e.g., alignment score and velocity correlation), with a lower bound informed by theory: we require $\alpha_m\geq 0.5$ per mode $m\in\{I,J,K\}$ to preclude chain-merging via small overlaps. Typical values are $\alpha_I\in[0.6,0.8]$, $\alpha_J\in[0.7,0.9]$ (time contiguity), and $\alpha_K\in[0.5,0.7]$ (feature dependence). Sensitivity analyses show results are stable within these ranges.
 
+\paragraph{Composite score and merge acceptance criterion.} Let the blockwise loss be $\mathcal{L}$ in Eq.~\eqref{eq:objective}. We define a composite score $S_u := -\,\mathcal{L}(\hat{\mathcal{X}}_u)$ so that higher is better. For a proposed merge $B_{\mathrm{merge}} = B_a \cup B_b$, we compute $\Delta S = S(B_{\mathrm{merge}}) - \max\{S(B_a), S(B_b)\}$. To quantify uncertainty, we perform $N=500$ block bootstraps along the cell dimension within $\mathcal{I}_a\cup\mathcal{I}_b$ (with time contiguity preserved) to obtain a bootstrap distribution for $\Delta S$. A merge is \emph{accepted} iff (i) the 5th percentile of the bootstrap distribution of $\Delta S$ is $\ge 0$, and (ii) $J_I\ge\alpha_I$, $J_J\ge\alpha_J$, $J_K\ge\alpha_K$. This rule ensures monotone improvement under uncertainty while preventing over-merging.
+
 \subsection{Theoretical guarantees}
 
 \begin{theorem}[Tri-mode preservation under randomized partitioning]
@@ -267,7 +268,7 @@ Let $B^\star=(\mathcal I^\star,\mathcal J^\star,\mathcal K^\star)$ be a contiguo
 \begin{itemize}
     \item[(A1)] \textbf{Cell-mode coherence}: cells in $\mathcal{I}^\star$ have pairwise correlation $\geq \rho_I$ and spatial/lineage proximity
     \item[(A2)] \textbf{Time-mode contiguity}: $\mathcal{J}^\star$ forms a contiguous interval with temporal autocorrelation $\geq \rho_J$
-    \item[(A3)] \textbf{Feature-mode dependence}: features in $\mathcal{K}^\star$ pass a dependence test (HSIC/dCor) at level $\alpha_K$ within the tri-block
+    \item[(A3)] \textbf{Feature-mode dependence}: features in $\mathcal{K}^\star$ surpass a dependence threshold (HSIC/dCor) within the tri-block
 \end{itemize}
 
 In one randomized candidate generation, define the (clipped) single-mode preservation terms
@@ -276,27 +277,22 @@ In one randomized candidate generation, define the (clipped) single-mode preserv
 \tilde q_J &:= \min\!\Big\{1,\; 1 - \exp\!\Big(-\tfrac{|\mathcal{J}^\star|^2 \, \rho_J}{2\sigma_J^2}\Big)\Big\} \\
 \tilde q_K &:= \underline{\pi}_K\,\in[0,1]
 \end{align}
-where $\underline{\pi}_K$ is a one-sided lower confidence bound (e.g., Jeffreys/Wilson) on the probability that a feature from $\mathcal{K}^\star$ is grouped with other $\mathcal{K}^\star$ features during feature-mode candidate generation under BY-controlled selection. To estimate $\underline{\pi}_K$, we compute the empirical proportion of $\mathcal{K}^\star$ features that co-occur in the same feature group across candidate generations and then apply a one-sided lower confidence bound (Jeffreys or Wilson) to account for sampling uncertainty; this yields a valid lower bound even when the number of generations is moderate. Let $\kappa\in(0,1]$ be a dependence discount capturing cross-mode dependence beyond candidate-generation independence.
+where $\underline{\pi}_K$ is a one-sided lower confidence bound (e.g., Jeffreys/Wilson) on the probability that a feature from $\mathcal{K}^\star$ is grouped with other $\mathcal{K}^\star$ features during \emph{feature-mode candidate generation} under the fixed dependence thresholding scheme. To estimate $\underline{\pi}_K$, we compute the empirical proportion of $\mathcal{K}^\star$ features that co-occur in the same feature group across candidate generations and then apply a one-sided lower confidence bound (Jeffreys or Wilson) to account for sampling uncertainty; this yields a valid lower bound even when the number of generations is moderate. Let $\kappa\in(0,1]$ be a dependence discount capturing cross-mode dependence beyond candidate-generation independence.
 
 Then the event that $B^\star$ is unsplit and enqueued with score above $\tau$ occurs with probability at least
 \begin{equation}
 q \;\ge\; \max\Big\{\, \kappa\, \tilde q_I\, \tilde q_J\, \tilde q_K,\; \min(\tilde q_I,\tilde q_J,\tilde q_K) - \varepsilon_{\mathrm{dep}},\; 0\,\Big\},
 \label{eq:q_lower}
 \end{equation}
-The choice between the multiplicative discount and the minimum-minus-penalty form depends on the estimated cross-mode dependence. When candidate generation across modes is approximately independent, we prefer the multiplicative form with $\kappa\approx 1$. Under stronger dependence, the minimum-minus-penalty form provides a more conservative bound. 
+The choice between the multiplicative discount and the minimum-minus-penalty form depends on the estimated cross-mode dependence. When candidate generation across modes is approximately independent, we prefer the multiplicative form with $\kappa\approx 1$. Under stronger dependence, the minimum-minus-penalty form provides a more conservative bound.
 
-In practice, we estimate $\varepsilon_{\mathrm{dep}}$ by measuring the empirical joint failure rate of the candidate-generation process and subtracting the product of marginal failure rates; when samples are limited, we use an upper bound derived from mode-wise dependence statistics (e.g., HSIC/dCor between candidate indicators). A conservative choice is to default to the minimum-minus-penalty form when uncertainty is high.
+In practice, we estimate $\varepsilon_{\mathrm{dep}}$ by measuring the empirical joint failure rate of the candidate-generation process via block bootstrap across embryos and features and subtracting the product of marginal failure rates; when samples are limited, we use an upper bound derived from mode-wise dependence statistics (e.g., HSIC/dCor between candidate indicators). A conservative choice is to default to the minimum-minus-penalty form when uncertainty is high.
 
-where $\varepsilon_{\mathrm{dep}}\in[0,1)$ is a small dependence penalty (estimated empirically; see Practical guidance). After $T_p$ i.i.d. generations and monotone merging with per-mode thresholds $(\alpha_I,\alpha_J,\alpha_K)$ and non-decreasing composite score, the probability that there exists a block $\hat B$ with $J_3(\hat B,B^\star)\ge \alpha$ and $J_I\ge\alpha_I, J_J\ge\alpha_J, J_K\ge\alpha_K$ is at least $1-(1-q)^{T_p}$.
-
-Consequently, choosing $T_p\ge \lceil \log\delta/\log(1-q)\rceil$ ensures failure probability $\le \delta$ for any $\delta\in(0,1)$.
+After $T_p$ i.i.d. generations and monotone merging with per-mode thresholds $(\alpha_I,\alpha_J,\alpha_K)$ and the acceptance rule above, the probability that there exists a block $\hat B$ with $J_3(\hat B,B^\star)\ge \alpha$ and $J_I\ge\alpha_I, J_J\ge\alpha_J, J_K\ge\alpha_K$ is at least $1-(1-q)^{T_p}$. Consequently, choosing $T_p\ge \lceil \log\delta/\log(1-q)\rceil$ ensures failure probability $\le \delta$ for any $\delta\in(0,1)$.
 \end{theorem}
 
 \begin{proof}[Proof sketch]
-(i) Lower-bound $\tilde q_I,\tilde q_J$ via concentration inequalities for intra-block affinities and contiguous coverage; clip to $[0,1]$ for well-defined probabilities. Replace mutual-information dependence with HSIC/dCor to ensure dimensionless, thresholded selection; define $\tilde q_K$ as a validated lower bound on within-support grouping probability under BY control.
-(ii) Independence applies only to \emph{candidate-generation} in each mode; downstream clustering/merging may induce dependence, captured by the multiplicative discount $\kappa$ or the Bonferroni-type conservative term $\min(\cdot)-\varepsilon_{\mathrm{dep}}$.
-(iii) Monotonicity of the composite score upon union merges is enforced algorithmically with per-mode thresholds and non-decreasing score within bootstrap confidence intervals, preventing adverse merges that could discard true blocks.
-(iv) Apply the union bound over $T_p$ independent trials to obtain the preservation guarantee for at least one candidate; monotone merging preserves or improves coverage under the stated constraints.
+(i) Lower-bound $\tilde q_I,\tilde q_J$ via concentration inequalities for intra-block affinities and contiguous coverage; clip to $[0,1]$ for well-defined probabilities. Define $\tilde q_K$ as a validated lower bound on within-support grouping probability under fixed dependence thresholding in feature-mode candidate generation. (ii) Independence applies only to \emph{candidate-generation} in each mode; downstream clustering/merging may induce dependence, captured by the multiplicative discount $\kappa$ or the Bonferroni-type conservative term $\min(\cdot)-\varepsilon_{\mathrm{dep}}$. (iii) Monotonicity of the composite score upon union merges is enforced algorithmically with per-mode thresholds and the bootstrap-based acceptance rule, preventing adverse merges that could discard true blocks. (iv) Apply the union bound over $T_p$ independent trials to obtain the preservation guarantee for at least one candidate; monotone merging preserves or improves coverage under the stated constraints.
 \end{proof}
 
 \textbf{Assumptions and parameter definitions:} To make the bounds operationable, we define the noise scales and thresholds:
@@ -304,7 +300,7 @@ Consequently, choosing $T_p\ge \lceil \log\delta/\log(1-q)\rceil$ ensures failur
 \item $\sigma_I, \sigma_J$ represent the empirical standard deviations of cell correlation estimates and temporal autocorrelation estimates, respectively.
 \item $\rho_J$ is defined as the lag-1 autocorrelation averaged within the time block $\mathcal{J}^\star$.
 \item $\rho_I$ is the lower bound of pairwise correlations between cells within $\mathcal{I}^\star$.
-\item $\underline{\pi}_K$ is obtained from discovery data by resampling: estimate the probability that features from $\mathcal{K}^\star$ co-occur in the same feature group when selection is driven by BY-controlled HSIC/dCor exceedance; report the one-sided lower confidence bound.
+\item $\underline{\pi}_K$ is obtained from discovery data by resampling candidate generations under fixed dependence thresholds; we report the one-sided lower confidence bound.
 \end{itemize}
 
 Candidate generation operates independently across the three modes; the overall bound uses a dependence discount $\kappa$ or a conservative Bonferroni-style term to account for residual cross-mode dependence.
@@ -344,9 +340,9 @@ For our datasets with $C \sim 300$, $T \sim 100$, $F \sim 65$, and $T_p = 1000$,
 \end{itemize}
 
 \subsection{Implementation and reproducibility}
-Morphological/contact quantities and $\eta$ follow CMap's definitions; 3DCSQ features use the authors' public implementation (SPHARM+PCA), both static and dynamic versions are available. Our tensor is built primarily from per-frame static features; dynamic features are used in post hoc interpretation. Feature-mode dependence is assessed by HSIC/dCor with BY control unless otherwise specified. All code is in Python/Rust with MPI-based parallelization; seeds are fixed. Preprocessing scripts, feature lists, and hyperparameters are provided in Supplementary Materials.
+Morphological/contact quantities and $\Psi$ follow CMap's definitions; 3DCSQ features use the authors' public implementation (SPHARM+PCA). Our tensor is built primarily from per-frame static features; lifetime-aggregated and dynamic summary features are used in post hoc interpretation. Feature-mode dependence is assessed by HSIC/dCor with fixed thresholds or hold-out calibration; BY FDR control is reserved for post-hoc statistical testing of discovered blocks. All code is in Python/Rust with MPI-based parallelization; seeds are fixed. Preprocessing scripts, feature lists, and hyperparameters are provided in Supplementary Materials.
 
-\paragraph{Unified evaluation protocol for baselines.} All baseline methods share the same splits, seeds, early stopping, and preprocessing. CP/Tucker/PARAFAC2 ranks are selected by cross-validated BIC within a grid $r\in\{3,5,7,9,11\}$ (with CORCONDIA sanity checks); NTF uses a temporal smoothness weight $\lambda_t\in\{0,10^{-3},10^{-2},10^{-1},1\}$; spectral/biclustering methods scan cluster counts $k\in\{6,8,10,12\}$ with identical regularization; all methods use the same 10-fold CV and patience~$=10$ early stopping; random seeds are shared across folds; initialization uses 5 restarts with best validation score kept. Full grids and exact settings are documented in Supplementary Table~S1.
+\paragraph{Unified evaluation protocol for baselines.} All baseline methods share the same splits, seeds, early stopping, and preprocessing. CP/Tucker/PARAFAC2 ranks are selected by cross-validated BIC within a grid $r\in\{3,5,7,9,11\}$ (with CORCONDIA sanity checks); NTF uses a temporal smoothness weight $\lambda_t\in\{0,10^{-3},10^{-2},10^{-1},1\}$; spectral/biclustering methods scan cluster counts $k\in\{6,8,10,12\}$ with identical regularization; all methods use the same 10-fold CV and patience~$=10$ early stopping; random seeds are shared across folds; initialization uses 5 restarts with best validation score kept. Full hyperparameter search spaces for each baseline and \emph{wall-clock runtimes} per method are reported in Supplementary Tables~S1--S2.
 
 \section{Background and Related Work}
 
@@ -603,10 +599,7 @@ Our tensor co-clustering framework recovers the hallmark spatiotemporal coordina
 \section{Future Work: Careful Discovery of New Spatiotemporal Patterns}
 \label{sec:future}
 
-Our results indicate that tensor co-clustering can recover established behaviors in
-\textit{C.~elegans}.  The next stage is to use the same framework, with stronger controls,
- to discover \emph{previously unreported} patterns both in nematode embryogenesis and in
- other systems.  Below we outline a cautious, extensible agenda.
+To keep focus on core contributions while outlining immediate next steps, we condense our agenda. We will pursue a three-phase loop: (i) unsupervised discovery under strict regularization, (ii) pre-registered testing on held-out embryos or perturbations, and (iii) mechanistic triangulation by orthogonal readouts (genetics, force/signaling reporters). Immediate targets include micro-coordination waves during dorsal intercalation, leader–follower switches, and pre-closure tension release. Methodologically, we are extending DiMergeTCC with Bayesian uncertainty-aware co-clustering, physics/topology-informed features, improved alignment across embryos/species, streaming/federated scaling, rare-event scan statistics, and causal triangulation. Validation standards will include positive/negative controls, ablations, calibrated power analyses, and full uncertainty reports. Full details of this agenda are moved to the Supplementary Materials.
 
 \subsection{Guiding principles and discovery protocol}
 We adopt a three-phase loop: (i) \emph{unsupervised discovery} under strict regularization,
