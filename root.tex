@@ -407,6 +407,13 @@ aggregated across blocks to produce Fig.~\ref{fig:features}.
   \label{fig:features}
 \end{figure*}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{Demo2_Dorsal_Cell_Trajectories.png}
+  \caption{\textbf{Dorsal Intercalating Cell Trajectories.} Spatial trajectories showing convergent extension: left (blue) and right (red) cohorts migrate toward the dorsal midline, exhibiting characteristic finger-like interdigitation. Axes denote anterior--posterior (x) and left--right (y).}
+  \label{fig:di_tracks}
+\end{figure}
+
 \paragraph{Primary endpoints (pre-specified).}
 \begin{enumerate}
 \item \textbf{Dorsal intercalation window detection.} A significant rise in $P_{ij}(t)$ among dorsal hyp cells on each side (left/right) during $t\in[225,235]$~min and sustained high values through $t\approx 254$~min (Figs.~\ref{fig:di_left},\ref{fig:di_right}), with cross-midline convergence demonstrated by directed trajectories (Fig.~\ref{fig:di_tracks}).
@@ -586,17 +593,10 @@ All ablations demonstrate that DiMergeTCC's performance depends on the integrate
 \subsection{Conclusion}
 Our tensor co-clustering framework recovers the hallmark spatiotemporal coordination of \emph{dorsal intercalation} and the kinematic/shape signatures of \emph{intestinal morphogenesis}, with quantitative alignment to the known developmental schedule and mechanisms. The agreement spans probability dynamics, trajectories, velocity fields, and feature attributions, and is robust to ablations and null tests. These results provide strong evidence that the method captures genuine biological programs rather than artifacts of partitioning or feature selection.
 
-\vspace{0.5em}
-\noindent\textbf{Figure references.} Figure~\ref{fig:di_left}: left-side dorsal intercalation $P_{ij}(t)$; Figure~\ref{fig:di_right}: right-side analog; Figure~\ref{fig:di_tracks}: trajectories illustrating convergent extension; Figure~\ref{fig:decline}: coordination decline heatmap; Figure~\ref{fig:int_velocity}: intestinal velocity field with negative $v_z$ bias; Figure~\ref{fig:features}: feature-weight distributions for the two processes.
 
 % -------------------- Figure environments (captions as provided) --------------------
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{Demo2_Dorsal_Cell_Trajectories.png}
-  \caption{\textbf{Dorsal Intercalating Cell Trajectories.} Spatial trajectories showing convergent extension: left (blue) and right (red) cohorts migrate toward the dorsal midline, exhibiting characteristic finger-like interdigitation. Axes denote anterior--posterior (x) and left--right (y).}
-  \label{fig:di_tracks}
-\end{figure}
+
 
 % ------------------------ FUTURE WORK ------------------------
 \section{Future Work: Careful Discovery of New Spatiotemporal Patterns}
