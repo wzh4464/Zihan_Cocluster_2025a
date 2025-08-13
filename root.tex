@@ -369,6 +369,44 @@ w_f = \frac{\sum_{(i,t)\in\mathcal{I}_u\times\mathcal{J}_u} X_{itf}^2}{\sum_{(i,
 \end{equation}
 aggregated across blocks to produce Fig.~\ref{fig:features}.
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{Demo1A_Dorsal_Left_Coclustering_Heatmap.png}
+  \caption{\textbf{Dorsal Intercalation Left Side Co-clustering Heatmap.} Time-resolved co-clustering probability matrix for left-side dorsal intercalating cells during \textit{C.~elegans} embryonic morphogenesis (220--255 minutes relative to end of 4-cell stage). The heatmap displays pairwise clustering probabilities between 10 left-side hypodermal cells as they undergo convergent extension across the dorsal midline. High values (red) indicate synchronized clustering during 225--235 minutes; low values (blue) indicate independent movement. Cell identities correspond to hyp1L--hyp7L lineages.}
+  \label{fig:di_left}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{Demo1B_Dorsal_Right_Coclustering_Heatmap.png}
+  \caption{\textbf{Dorsal Intercalation Right Side Co-clustering Heatmap.} Companion heatmap to Fig.~\ref{fig:di_left} for 10 right-side hypodermal cells (hyp1R--hyp7R). Peak co-clustering occurs during the window of basolateral protrusion extension and interdigitation across the midline.}
+  \label{fig:di_right}
+\end{figure}
+
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{Demo4_Intestinal_Coclustering_Heatmap.png}
+  \caption{\textbf{Temporal Decline Co-clustering Heatmap.} Co-clustering probability matrix for 12 dorsal cells (C01--C12) showing uniform high coordination during 225--240 minutes (red), followed by systematic decline during 240--255 minutes (blue), consistent with post-intercalation stabilization.}
+  \label{fig:decline}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{Demo6_Intestinal_Velocity_Field.png}
+  \caption{\textbf{Intestinal Morphogenesis Velocity Field Analysis.} Velocity field of intestinal primordium cells during reorganization. Predominant negative $v_z$ velocities (inward/ventral movement toward imaging objective) reflect movements associated with apical constriction and internalization during E-lineage morphogenesis. Coordinate system: $x$ = anterior-posterior (AP), $y$ = left-right (LR), $z$ = dorsal-ventral (DV, imaging axis). Dynamics align with left--right asymmetry establishment and homotypic intercalation.}
+  \label{fig:int_velocity}
+\end{figure}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=.48\linewidth]{Demo7A_Dorsal_Coclustering_Features_Pie.png}\hfill
+  \includegraphics[width=.48\linewidth]{Demo7B_Intestinal_Coclustering_Features_Pie.png}
+  \caption{\textbf{Morphogenetic Feature Distributions.} (\textbf{A}) Dorsal intercalation: relative weights indicate Y-velocity (26\%), cell elongation (21\%), surface curvature (18\%), and additional geometric features. (\textbf{B}) Intestinal morphogenesis: Z-velocity (28\%), apical surface area (24\%), volume change (19\%), and ancillary parameters. Weights derived from blockwise variance contributions (Eq.~\ref{eq:feature_weight}).}
+  \label{fig:features}
+\end{figure*}
+
 \paragraph{Primary endpoints (pre-specified).}
 \begin{enumerate}
 \item \textbf{Dorsal intercalation window detection.} A significant rise in $P_{ij}(t)$ among dorsal hyp cells on each side (left/right) during $t\in[225,235]$~min and sustained high values through $t\approx 254$~min (Figs.~\ref{fig:di_left},\ref{fig:di_right}), with cross-midline convergence demonstrated by directed trajectories (Fig.~\ref{fig:di_tracks}).
@@ -552,19 +590,6 @@ Our tensor co-clustering framework recovers the hallmark spatiotemporal coordina
 \noindent\textbf{Figure references.} Figure~\ref{fig:di_left}: left-side dorsal intercalation $P_{ij}(t)$; Figure~\ref{fig:di_right}: right-side analog; Figure~\ref{fig:di_tracks}: trajectories illustrating convergent extension; Figure~\ref{fig:decline}: coordination decline heatmap; Figure~\ref{fig:int_velocity}: intestinal velocity field with negative $v_z$ bias; Figure~\ref{fig:features}: feature-weight distributions for the two processes.
 
 % -------------------- Figure environments (captions as provided) --------------------
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{Demo1A_Dorsal_Left_Coclustering_Heatmap.png}
-  \caption{\textbf{Dorsal Intercalation Left Side Co-clustering Heatmap.} Time-resolved co-clustering probability matrix for left-side dorsal intercalating cells during \textit{C.~elegans} embryonic morphogenesis (220--255 minutes relative to end of 4-cell stage). The heatmap displays pairwise clustering probabilities between 10 left-side hypodermal cells as they undergo convergent extension across the dorsal midline. High values (red) indicate synchronized clustering during 225--235 minutes; low values (blue) indicate independent movement. Cell identities correspond to hyp1L--hyp7L lineages.}
-  \label{fig:di_left}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{Demo1B_Dorsal_Right_Coclustering_Heatmap.png}
-  \caption{\textbf{Dorsal Intercalation Right Side Co-clustering Heatmap.} Companion heatmap to Fig.~\ref{fig:di_left} for 10 right-side hypodermal cells (hyp1R--hyp7R). Peak co-clustering occurs during the window of basolateral protrusion extension and interdigitation across the midline.}
-  \label{fig:di_right}
-\end{figure}
 
 \begin{figure}[t]
   \centering
@@ -572,28 +597,6 @@ Our tensor co-clustering framework recovers the hallmark spatiotemporal coordina
   \caption{\textbf{Dorsal Intercalating Cell Trajectories.} Spatial trajectories showing convergent extension: left (blue) and right (red) cohorts migrate toward the dorsal midline, exhibiting characteristic finger-like interdigitation. Axes denote anterior--posterior (x) and left--right (y).}
   \label{fig:di_tracks}
 \end{figure}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{Demo4_Intestinal_Coclustering_Heatmap.png}
-  \caption{\textbf{Temporal Decline Co-clustering Heatmap.} Co-clustering probability matrix for 12 dorsal cells (C01--C12) showing uniform high coordination during 225--240 minutes (red), followed by systematic decline during 240--255 minutes (blue), consistent with post-intercalation stabilization.}
-  \label{fig:decline}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{Demo6_Intestinal_Velocity_Field.png}
-  \caption{\textbf{Intestinal Morphogenesis Velocity Field Analysis.} Velocity field of intestinal primordium cells during reorganization. Predominant negative $v_z$ velocities (inward/ventral movement toward imaging objective) reflect movements associated with apical constriction and internalization during E-lineage morphogenesis. Coordinate system: $x$ = anterior-posterior (AP), $y$ = left-right (LR), $z$ = dorsal-ventral (DV, imaging axis). Dynamics align with left--right asymmetry establishment and homotypic intercalation.}
-  \label{fig:int_velocity}
-\end{figure}
-
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=.48\linewidth]{Demo7A_Dorsal_Coclustering_Features_Pie.png}\hfill
-  \includegraphics[width=.48\linewidth]{Demo7B_Intestinal_Coclustering_Features_Pie.png}
-  \caption{\textbf{Morphogenetic Feature Distributions.} (\textbf{A}) Dorsal intercalation: relative weights indicate Y-velocity (26\%), cell elongation (21\%), surface curvature (18\%), and additional geometric features. (\textbf{B}) Intestinal morphogenesis: Z-velocity (28\%), apical surface area (24\%), volume change (19\%), and ancillary parameters. Weights derived from blockwise variance contributions (Eq.~\ref{eq:feature_weight}).}
-  \label{fig:features}
-\end{figure*}
 
 % ------------------------ FUTURE WORK ------------------------
 \section{Future Work: Careful Discovery of New Spatiotemporal Patterns}
