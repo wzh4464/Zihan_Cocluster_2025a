@@ -612,36 +612,6 @@ DiMergeTCC discovers contiguous, multi-way coordination without prior labels, br
 \section{Limitations}\label{sec:limits}
 Current scoring assumes sub-Gaussian noise and relies on time-contiguity (or a small union of contiguous windows as noted in Sec.~\ref{sec:methods}). Extremely sparse or highly irregular sampling may reduce power; future work will incorporate continuous-time models and robust losses. Results may also be influenced by feature engineering; we therefore provide feature-subset ablations and random-subset robustness analyses (Supplementary Table~S3) and axis-jitter sensitivity checks (Supplementary Fig.~S1b).
 
-% ------------------------ AVAILABILITY/REPRO ------------------------
-\section{Data and Code Availability}\label{sec:availability}
-
-\textbf{Code and Reproducibility:} For peer review, we provide a fully executable anonymous archive containing source code, containers, and workflows; editors and reviewers have access via a private link. Upon acceptance, we will de-anonymize and mint a DOI. The package includes:
-\begin{itemize}
-    \item Full DiMergeTCC implementation in Python/Rust with MPI parallelization
-    \item Docker and Singularity containers with all dependencies pre-installed
-    \item Complete Snakemake workflow (\texttt{snakemake --cores 16 all}) to reproduce all figures and analyses
-    \item Configuration files (\texttt{config.yaml}) with exact hyperparameters and random seeds
-    \item Preprocessing scripts for CMap data integration and feature extraction
-    \item Statistical analysis scripts with permutation tests and BY control
-    \item SHA-256 checksums for all intermediate and final outputs
-\end{itemize}
-
-\textbf{Data Access:} Morphological time series data derived from CMap embryonic imaging are available through the same repository. Raw 4D imaging data can be accessed via the CMap consortium data portal (\url{https://cmap.readthedocs.io/}) with appropriate data usage agreements. All processed tensors, feature matrices, and co-clustering results are included in the reproducible workflow.
-
-\textbf{Computational Requirements:} Full reproduction requires a multi-core workstation (16+ cores recommended) with 64GB RAM. Estimated runtime: 2-4 hours for complete analysis pipeline. Cloud computing scripts for AWS/GCP are provided for scalable execution.
-
-\textbf{License:} All code is released under MIT License. Data usage follows CMap consortium guidelines.
-
-% ------------------------ ETHICS/ACK/etc. ------------------------
-\section{Competing interests}
-No competing interests declared.
-
-\section{Author contributions}
-W.Z. and H.Y. conceived the study; W.Z. implemented the method and ran experiments; W.Z., Z.H., and Z.L. analyzed results; all authors wrote and approved the manuscript.
-
-\section{Acknowledgements}
-We thank anonymous reviewers for constructive feedback. Supported in part by NSF \#1636933 and \#1920920.
-
 % ------------------------ BIBLIO ------------------------
 \bibliographystyle{abbrvnat}
 \bibliography{refs}
