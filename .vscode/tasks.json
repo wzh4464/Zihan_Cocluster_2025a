@@ -12,5 +12,21 @@
         "isDefault": true
       }
     },
+    // arara with verbose output
+    {
+      "label": "arara -v root",
+      "type": "shell",
+      "command": "arara",
+      "args": ["-v", "root"],
+      "group": "build"
+    },
+    // arara compile root
+    {
+      "label": "arara root",
+      "type": "shell",
+      "command": "arara",
+      "args": ["root"],
+      "group": "build"
+    }
   ]
 }
